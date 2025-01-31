@@ -1,0 +1,82 @@
+import win32com.client    
+import pandas as pd
+import os
+
+site = ['13KRW0088']
+sumber = r"D:\IOH\Report\13KRW0133"
+plasite = r"D:\IOH\Report\CO Plan 30 & 31 Jan 2025.xlsx"   ## untuk mengisi SOW
+ndb4 = r"D:\IOH\NDB\KRW_4G_NDB_RAN-CELL-LEVEL_HUAWEI_20250120.xlsx"  ## untuk mengisi table 4G
+ndb2 = r"D:\IOH\NDB\KRW_2G_NDB_RAN-CELL-LEVEL_HUAWEI_20250120.xlsx"  ## untuk mengisi table 2G
+
+####=================================
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"D:\IOH\Report\siteid_RAN_SWAP_SFA_FE_HWI_thm.xlsx")
+Excel.visible = True
+###==================================
+#penamaan sheet
+sh_2g =wb.Worksheets("2G")
+sh_4g =wb.Worksheets("4G")
+sh_idle =wb.Worksheets("DT Idle Mode")
+sh_ho =wb.Worksheets("Mobility Handover")
+###===========================
+df = pd.read_excel(plasite,sheet_name='List')
+df = pd.DataFrame(df)
+df = df[['DUID','Site Name','Site ID','Final Config (TBOQ)']]
+dfl = df[df['Site ID'].isin(site)].reset_index()
+dfl['name_id_dui'] = dfl['Site Name'] +" / "+ dfl['Site ID']+" / "+dfl['DUID']
+# dfl['lat_long'] = dfl['lat'].astype(str) +" / "+ dfl['long'].astype(str)
+# print(dfl)
+sow = dfl.loc[0,'Final Config (TBOQ)']
+sitename = dfl.loc[0,'name_id_dui']
+# latlon = dfl.loc[0,'lat_long']
+
+dfndb2 = pd.read_excel(ndb2)
+dfdb2 = pd.DataFrame(dfndb2)
+db2 = dfdb2[['SITE_ID','SectorID','CELL_ID','SITE_NAME','BCCH__OR__TRX1_Freq','LAC','CELL_SYSTEM_INFO']]
+db2g = db2[(db2['SITE_ID'].isin(site))&(db2['CELL_SYSTEM_INFO']=='GSM900')]
+df2gi = db2g.sort_values(by='SectorID').reset_index()
+siteid = df2gi.loc[0,'SITE_ID']
+lac2g = df2gi.loc[0,'LAC']
+cid2g = df2gi.loc[0,'CELL_ID']
+bcch1 = df2gi.loc[0,'BCCH__OR__TRX1_Freq']
+bcch2 = df2gi.loc[1,'BCCH__OR__TRX1_Freq']
+bcch3 = df2gi.loc[2,'BCCH__OR__TRX1_Freq']
+
+dfndb4 = pd.read_excel(ndb4)
+dfdb4 = pd.DataFrame(dfndb4)
+db4 = dfdb4[['SITE_ID','SITE_NAME','ADDRESS','X_LONGITUDE','Y_LATITUDE','TAC_4G','PCI','ENBID','SectorID']]
+db4g = db4[(db4['SITE_ID'].isin(site))&(db4['SectorID'].isin([71,72,73]))]
+df4gi = db4g.sort_values(by='SectorID').reset_index()
+df4gi['lat_long'] = df4gi['Y_LATITUDE'].astype(str) +" / "+ df4gi['X_LONGITUDE'].astype(str)
+lac4g = df4gi.loc[0,'TAC_4G']
+rncid = df4gi.loc[0,'ENBID']
+pci1,pci2,pci3 = df4gi.loc[0,'PCI'],df4gi.loc[1,'PCI'],df4gi.loc[2,'PCI']
+cid4g1,cid4g2,cid4g3 = df4gi.loc[0,'SectorID'],df4gi.loc[1,'SectorID'],df4gi.loc[2,'SectorID']
+addr = df4gi.loc[0,'ADDRESS']
+latlon = df4gi.loc[0,'lat_long']
+
+print(f"""
+siteid {siteid}
+sow {sow}
+sitename {sitename}
+address {addr}
+latlon {latlon}
+informasi 2G LAC:{lac2g}, CellID:{cid2g}, BCCH:{bcch1}, {bcch2}, {bcch3}
+informasi 4G LAC:{lac4g}, EnodbeID:{rncid}, CellID:{cid4g1}, {cid4g2}, {cid4g3}, PhysicalID:{pci1}, {pci2}, {pci3}
+""")
+
+#mengisi data sheet 2G
+sh_2g.cells(7,4).value = sow #sow
+sh_2g.cells(10,4).value = sitename #Site Name / Site Id / DU ID
+sh_2g.cells(11,4).value = addr #addrress
+sh_2g.cells(12,4).value = latlon #lat long
+sh_2g.cells(24,5).value = lac2g #lac 2g
+sh_2g.cells(24,7).value = cid2g #cell ID 2g
+sh_2g.cells(24,8).value,sh_2g.cells(26,8).value,sh_2g.cells(28,8).value = bcch1,bcch2,bcch3 
+
+#mengisi data sheet 4G
+sh_4g.cells(24,5).value = lac4g #lac 2g
+sh_4g.cells(24,6).value = rncid #RNC ID 2g
+sh_4g.cells(24,7).value,sh_4g.cells(26,7).value,sh_4g.cells(28,7).value = cid4g1,cid4g2,cid4g3
+sh_4g.cells(24,8).value,sh_4g.cells(26,8).value,sh_4g.cells(28,8).value = pci1,pci2,pci3
+
