@@ -1,0 +1,173 @@
+import win32com.client 
+
+sitename = '13KRW0283_RAGOG_EP'
+dirpath = r'D:\IOH\Report\test'
+repot_template = r"D:\IOH\Report\Smart 32T32R and Massive MIMO Trial Report_tamplate.pptx"
+####===========================
+l18 = ['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg','7.jpg','8.jpg','9.jpg','10.jpg']
+l9 = ['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg','7.jpg','8.jpg','9.jpg','10.jpg']
+l21 = ['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg','7.jpg','8.jpg','9.jpg','10.jpg']
+Application = win32com.client.Dispatch("PowerPoint.Application")
+Application.Visible = True # shows what's happening, not required, but helpful for now
+Presentation = Application.Presentations.Open(repot_template) # open file ppt
+###=====membaca slide dan isi slide===========
+# for i in range(len(Presentation.slides)):
+#     print(f'slide {i}')
+#     for shape in Presentation.slides[i].shapes: 
+#         print('\t',(shape.name))
+####=========================================
+# def isi():
+#     tbltxt.Text = nilainya
+#     paragrapformat = tbltxt.ParagraphFormat
+#     paragrapformat.Alignment = 2
+def tulis():
+    ppshtxt = ppsh_i.TextFrame.TextRange
+    ppshtxt.Text = nilai
+###==========================================
+
+# slide3 = Presentation.slides[3]
+# ppsh_i = slide3.shapes[1]
+# nilai = f'Comparation Pre Post - RSRP Moving L1800 (Indosat) {sitename}'
+# tulis()
+
+# tabelsh = slide3.shapes[4]
+# tbl = tabelsh.Table
+# cell = tbl.Cell(2,4) #row,colom ==> mengisi baris ke dua dan kolom ke 4
+# tbltxt = cell.Shape.TextFrame.TextRange
+# nilainya = 10000
+# isi()
+#####==========L1800 PCI=============
+slide3 = Presentation.slides[3]
+ppsh_i = slide3.shapes[0]
+nilai = f'Comparation Pre Post - PCI Moving L1800 (Indosat) {sitename}'
+tulis()
+try: slide3.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[0]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide3.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[5]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide4 = Presentation.slides[4]
+ppsh_i = slide4.shapes[1]
+nilai = f'Comparation Pre Post - RSRP Moving L1800 (Indosat) {sitename}'
+tulis()
+try: slide4.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[1]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide4.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[6]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass    
+###=============
+slide5 = Presentation.slides[5]
+ppsh_i = slide5.shapes[0]
+nilai = f'Comparation Pre Post - SINR Moving L1800 (Indosat) {sitename}'
+tulis()
+try: slide5.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[2]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide5.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[7]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide6 = Presentation.slides[6]
+ppsh_i = slide6.shapes[0]
+nilai = f'Comparation Pre Post - CQI Moving L1800 (Indosat) {sitename}'
+tulis()
+try: slide6.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[3]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide6.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[8]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide7 = Presentation.slides[7]
+ppsh_i = slide7.shapes[0]
+nilai = f'Comparation Pre Post - Throughput DL Moving L1800 (Indosat) {sitename}'
+tulis()
+try: slide7.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[4]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide7.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L18/{l18[9]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+#####==========L2100 PCI=============
+slide9 = Presentation.slides[9]
+ppsh_i = slide9.shapes[0]
+nilai = f'Comparation Pre Post - PCI Moving L2100 (Indosat) {sitename}'
+tulis()
+try: slide9.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[0]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide9.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[5]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide10 = Presentation.slides[10]
+ppsh_i = slide10.shapes[1]
+nilai = f'Comparation Pre Post - RSRP Moving L2100 (Indosat) {sitename}'
+tulis()
+try: slide10.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[1]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide10.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[6]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass    
+###=============
+slide11 = Presentation.slides[11]
+ppsh_i = slide11.shapes[0]
+nilai = f'Comparation Pre Post - SINR Moving L2100 (Indosat) {sitename}'
+tulis()
+try: slide11.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[2]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide11.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[7]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide12 = Presentation.slides[12]
+ppsh_i = slide12.shapes[0]
+nilai = f'Comparation Pre Post - CQI Moving L2100 (Indosat) {sitename}'
+tulis()
+try: slide12.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[3]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide12.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[8]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide13 = Presentation.slides[13]
+ppsh_i = slide13.shapes[0]
+nilai = f'Comparation Pre Post - Throughput DL Moving L2100 (Indosat) {sitename}'
+tulis()
+try: slide13.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[4]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide13.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L21/{l21[9]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+#####==========L900 PCI=============
+slide15 = Presentation.slides[15]
+ppsh_i = slide15.shapes[0]
+nilai = f'Comparation Pre Post - PCI Moving L900 (Indosat) {sitename}'
+tulis()
+try: slide15.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[0]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide15.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[5]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide16 = Presentation.slides[16]
+ppsh_i = slide16.shapes[1]
+nilai = f'Comparation Pre Post - RSRP Moving L900 (Indosat) {sitename}'
+tulis()
+try: slide16.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[1]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide16.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[6]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass    
+###=============
+slide17 = Presentation.slides[17]
+ppsh_i = slide17.shapes[0]
+nilai = f'Comparation Pre Post - SINR Moving L900 (Indosat) {sitename}'
+tulis()
+try: slide17.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[2]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide17.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[7]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide18 = Presentation.slides[18]
+ppsh_i = slide18.shapes[0]
+nilai = f'Comparation Pre Post - CQI Moving L900 (Indosat) {sitename}'
+tulis()
+try: slide18.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[3]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide18.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[8]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
+###=============
+slide19 = Presentation.slides[19]
+ppsh_i = slide19.shapes[0]
+nilai = f'Comparation Pre Post - Throughput DL Moving L900 (Indosat) {sitename}'
+tulis()
+try: slide19.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[4]}', LinkToFile=False, SaveWithDocument=True, Left=21.6, Top=68.4, Width=450, Height=242.64)
+except: pass
+try: slide19.Shapes.AddPicture(FileName=f'{dirpath}/capturan/L9/{l9[9]}', LinkToFile=False, SaveWithDocument=True, Left=485.28, Top=68.4, Width=450, Height=242.64)
+except: pass
