@@ -1,0 +1,140 @@
+from geopy.distance import geodesic
+import pandas as pd
+import os
+import re
+from datetime import datetime, timedelta
+import time
+start_time = time.time()
+
+siteid = '13CJR0021'
+longitude = 107.00784
+latitude = -6.73336
+isd = 1500
+
+pathmrbefore = r"D:\IOH\Report\13CJR0021\KEBUNRAYACIBODAS_PS\23 JAN\Element-tile-RSRP-Serving_Cell_Average-2025-01-23.csv"
+pathmritg = r"D:\IOH\Report\13CJR0021\KEBUNRAYACIBODAS_PS\12 FEB\Element-tile-RSRP-Serving_Cell_Average-2025-02-12.csv"
+pathmropt = r"D:\IOH\Report\13CJR0021\KEBUNRAYACIBODAS_PS\19 FEB\Element-tile-RSRP-Serving_Cell_Average-2025-02-19.csv"
+#####===============MR RSRP Before ITG==================
+df = pd.read_csv(pathmrbefore)
+dfbef = pd.DataFrame(df)
+dfbef['siteid_sc'] = siteid
+dfbef['longitude_sc'] = longitude
+dfbef['latitude_sc'] = latitude
+
+# Menentukan range berdasarkan nilai
+def tentukan_range(rsrp):
+    if -85.00 < rsrp <= 0.00:
+        return '0 to -85'
+    elif -95.00 < rsrp <= -85.00:
+        return '-85 to -95'
+    elif -105.00 < rsrp <= -95.00:
+        return '-95 to -105'
+    elif -115.00 < rsrp <= -105.00:
+        return '-105 to -115'
+    elif -140.00 < rsrp <= -115.00:
+        return '-115 to -140'
+
+# Menambahkan kolom 'range'
+dfbef['range'] = dfbef['Serving Cell Average RSRP'].apply(tentukan_range)
+# Fungsi untuk menghitung jarak
+def hitung_jarak(row):
+    titik1 = (row['Latitude'], row['Longitude'])
+    titik2 = (row['latitude_sc'], row['longitude_sc'])
+    return round(geodesic(titik1, titik2).meters,2)
+
+# Menambahkan kolom 'Jarak'
+dfbef['Jarak'] = dfbef.apply(hitung_jarak, axis=1)
+mrbef = dfbef[dfbef['Jarak'] <= isd]
+# print(mrbef)
+list_range = ['0 to -85','-85 to -95','-95 to -105','-105 to -115','-115 to -140']
+###======== prosess data before ========================
+tot_samb = len(mrbef['range'])
+ptot_samb = round((tot_samb / tot_samb) * 100,2)
+
+mr_before = []
+for rang in list_range:
+    mr_q = mrbef[mrbef['range']== rang]
+    smr_q = len(mr_q['range'])
+    psmr_q = round((smr_q / tot_samb) * 100,2)
+    mr_before.append([rang,smr_q,psmr_q])
+  
+rsrp_105 = mr_before[0][1] + mr_before[1][1] + mr_before[2][1]
+prsrp_105 = round((rsrp_105/tot_samb)*100,2)
+rsrp_before = pd.DataFrame(mr_before,columns=['Range','bf','bf_(%)'])
+barisbaru = {'Range':'total_sample','bf':tot_samb,'bf_(%)':ptot_samb}
+tambahb = {'Range':'-105','bf':rsrp_105,'bf_(%)':prsrp_105}
+rsrp_before = pd.concat([rsrp_before, pd.DataFrame([barisbaru])], ignore_index=True)
+rsrp_before = pd.concat([rsrp_before, pd.DataFrame([tambahb])], ignore_index=True)
+# print(rsrp_before)
+#####===============MR RSRP After ITG==================
+df = pd.read_csv(pathmritg)
+dfitg = pd.DataFrame(df)
+dfitg['siteid_sc'] = siteid
+dfitg['longitude_sc'] = longitude
+dfitg['latitude_sc'] = latitude
+
+# Menambahkan kolom 'range'
+dfitg['range'] = dfitg['Serving Cell Average RSRP'].apply(tentukan_range)
+
+# Menambahkan kolom 'Jarak'
+dfitg['Jarak'] = dfitg.apply(hitung_jarak, axis=1)
+mritg = dfitg[dfitg['Jarak'] <= isd]
+# print(mrbef)
+###======== prosess data before ========================
+tot_sambitg = len(mritg['range'])
+ptot_sambitg = round((tot_sambitg / tot_sambitg) * 100,2)
+
+mr_itg = []
+for rang in list_range:
+    mr_q = mritg[mritg['range']== rang]
+    smr_q = len(mr_q['range'])
+    psmr_q = round((smr_q / tot_sambitg) * 100,2)
+    mr_itg.append([rang,smr_q,psmr_q])
+  
+rsrp_105 = mr_itg[0][1] + mr_itg[1][1] + mr_itg[2][1]
+prsrp_105 = round((rsrp_105/tot_sambitg)*100,2)
+rsrp_itg = pd.DataFrame(mr_itg,columns=['Range','itg','itg_(%)'])
+barisbaru = {'Range':'total_sample','itg':tot_sambitg,'itg_(%)':ptot_sambitg}
+tambahb = {'Range':'-105','itg':rsrp_105,'itg_(%)':prsrp_105}
+rsrp_itg = pd.concat([rsrp_itg, pd.DataFrame([barisbaru])], ignore_index=True)
+rsrp_itg = pd.concat([rsrp_itg, pd.DataFrame([tambahb])], ignore_index=True)
+# print(rsrp_itg)
+#####===============MR RSRP After OPT==================
+df = pd.read_csv(pathmropt)
+dfopt = pd.DataFrame(df)
+dfopt['siteid_sc'] = siteid
+dfopt['longitude_sc'] = longitude
+dfopt['latitude_sc'] = latitude
+
+# Menambahkan kolom 'range'
+dfopt['range'] = dfopt['Serving Cell Average RSRP'].apply(tentukan_range)
+
+# Menambahkan kolom 'Jarak'
+dfopt['Jarak'] = dfopt.apply(hitung_jarak, axis=1)
+mropt = dfopt[dfopt['Jarak'] <= isd]
+# print(mrbef)
+###======== prosess data before ========================
+tot_sambopt = len(mropt['range'])
+ptot_sambopt = round((tot_sambopt / tot_sambopt) * 100,2)
+
+mr_opt = []
+for rang in list_range:
+    mr_q = mropt[mropt['range']== rang]
+    smr_q = len(mr_q['range'])
+    psmr_q = round((smr_q / tot_sambopt) * 100,2)
+    mr_opt.append([rang,smr_q,psmr_q])
+  
+rsrp_105 = mr_opt[0][1] + mr_opt[1][1] + mr_opt[2][1]
+prsrp_105 = round((rsrp_105/tot_sambopt)*100,2)
+rsrp_opt = pd.DataFrame(mr_opt,columns=['Range','opt','opt_(%)'])
+barisbaru = {'Range':'total_sample','opt':tot_sambopt,'opt_(%)':ptot_sambopt}
+tambahb = {'Range':'-105','opt':rsrp_105,'opt_(%)':prsrp_105}
+rsrp_opt = pd.concat([rsrp_opt, pd.DataFrame([barisbaru])], ignore_index=True)
+rsrp_opt = pd.concat([rsrp_opt, pd.DataFrame([tambahb])], ignore_index=True)
+# print(rsrp_opt)
+combine = pd.merge(rsrp_before,rsrp_itg, on='Range', how='left')
+combine = pd.merge(combine,rsrp_opt, on='Range', how='left')
+print(combine)
+print('============================')
+end_time = time.time()
+print (f'Execution time:{end_time-start_time:.2f} seconds', 'Copyright(C) Arfan Amrico')
