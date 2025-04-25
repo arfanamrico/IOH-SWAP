@@ -1,0 +1,25 @@
+import pandas as pd
+
+source = ['13PLR0158']
+neigbor = []
+# data = []
+gcell4g = r"D:\IOH\NDB\file pendukung\4G_Gcell_20250204\4G_Gcell_20250204.csv"
+
+dfgcel = pd.read_csv(gcell4g)
+dfgcel = pd.DataFrame(dfgcel)
+dfq = dfgcel[['SITE_ID','CellName','SiteType','Longitude','Latitude','Dir','PCI','MOD_3']]
+dfq['Sector_id'] = dfq['CellName'].str[-1]
+##===prosess site source=========
+for s in source:
+    dfs = dfq[dfq['SITE_ID']== s].reset_index()
+    dfs['Source / Neighbor'] = 'Source'
+
+for n in neigbor:
+    sn,ss = n.rsplit('_',1)
+    dfn = dfq[(dfq['SITE_ID']== sn)&(dfq['Sector_id']== ss)].reset_index()
+    dfn['Source / Neighbor'] = 'Neighbor'
+    dfs = pd.concat([dfs,dfn], ignore_index=True)
+
+dfs = dfs[['SITE_ID','CellName','Sector_id','SiteType','Source / Neighbor','Longitude','Latitude','Dir','PCI','MOD_3']]
+print(dfs)
+
