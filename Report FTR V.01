@@ -1,0 +1,454 @@
+import win32com.client    
+import pandas as pd
+import os
+
+site = ['11TGX0024']
+sumber = r"C:\Users\Lenovo\Documents\Logfile\11TGX0024"
+plasite = r"C:\Users\Lenovo\Documents\template\M1_PLAN_FINAL_SITE.xlsx"
+gcell2G = r"C:\Users\Lenovo\Documents\Gcell 20250722\2G_Gcell_20250722.csv"
+gcell4G = r"C:\Users\Lenovo\Documents\Gcell 20250722\4G_Gcell_20250722.csv"
+# ndb = r"D:\IOH\NDB\address.xlsx"
+simpan = r"D:\IOH\Gcell"
+namefile = 'datatabelreport.xlsx'
+cet = f"{sumber}/CET_Template.xlsx"
+##=============================
+pic_path = f"{sumber}/capturan"
+pi = ["1.jpg","2.jpg","3.jpg"] #2G dan 4G
+sms = ["1.jpg","2.jpg","3.jpg"] #2G dan 4G
+usd = ["1.jpg","2.jpg"] #2G dan 4G
+okl = ["1.jpg","2.jpg"]
+ytb = ["1.jpg","2.jpg"]
+fbk = ["1.jpg","2.jpg"]
+wap = ["1.jpg","2.jpg","3.jpg"]
+volte = ["1.jpg","2.jpg","3.jpg"]
+csfb = ["1.jpg","2.jpg","3.jpg","4.jpg"]
+idl = ["G9.jpg","D18.jpg","L9.jpg","L18.jpg","L21.jpg","5G.jpg"]
+hon = ["2GHtoE.jpg","2GEtoH.jpg","2GHtoH.jpg","4GHtoE.jpg","4GEtoH.jpg","4GHtoH.jpg"]
+
+####=================================
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\siteid_RAN_SWAP_SFA_FE_HWI_thm.xlsx")
+Excel.visible = True
+###==================================
+#penamaan sheet
+sh_2g =wb.Worksheets("2G")
+sh_4g =wb.Worksheets("4G")
+sh_idle =wb.Worksheets("DT Idle Mode")
+sh_ho =wb.Worksheets("Mobility Handover")
+###===========================
+df = pd.read_excel(plasite,sheet_name='Sheet1')
+df = pd.DataFrame(df)
+df = df[['DUID','new_site_id','new_site_name','long','lat','Final Config (L2B)']]
+dfl = df[df['new_site_id'].isin(site)].reset_index()
+dfl['name_id_dui'] = dfl['new_site_name'] +" / "+ dfl['new_site_id']+" / "+dfl['DUID']
+dfl['lat_long'] = dfl['lat'].astype(str) +" / "+ dfl['long'].astype(str)
+# print(dfl)
+sow = dfl.loc[0,'Final Config (L2B)']
+sitename = dfl.loc[0,'name_id_dui']
+latlon = dfl.loc[0,'lat_long']
+
+df2g = pd.read_csv(gcell2G)
+df2g = pd.DataFrame(df2g)
+df2g = df2g[['SITE_ID','CellName','BCCH','CI','LAC']]
+df2gi = df2g[df2g['SITE_ID'].isin(site)].reset_index()
+# print(df2gi)
+siteid = df2gi.loc[0,'SITE_ID']
+lac2g = df2gi.loc[0,'LAC']
+cid2g = df2gi.loc[0,'CI']
+bcch1 = df2gi.loc[0,'BCCH']
+bcch2 = df2gi.loc[1,'BCCH']
+bcch3 = df2gi.loc[2,'BCCH']
+
+df4g = pd.read_csv(gcell4G)
+df4g = pd.DataFrame(df4g)
+df4g = df4g[['SITE_ID','SectorID','CellName','PCI','LAC','EnodeBID','ADDRESS']]
+# df4gi = df4g[df4g['Site ID'].isin(site)].reset_index()
+df4gi = df4g[(df4g['SITE_ID'].isin(site))&(df4g['SectorID'].isin([71,72,73]))].reset_index()
+# print(df4gi)
+lac4g = df4gi.loc[0,'LAC']
+rncid = df4gi.loc[0,'EnodeBID']
+pci1,pci2,pci3 = df4gi.loc[0,'PCI'],df4gi.loc[1,'PCI'],df4gi.loc[2,'PCI']
+cid4g1,cid4g2,cid4g3 = df4gi.loc[0,'SectorID'],df4gi.loc[1,'SectorID'],df4gi.loc[2,'SectorID']
+addr = df4gi.loc[0,'ADDRESS']
+
+# dfn = pd.read_excel(ndb,sheet_name='Sheet1')
+# dfn = pd.DataFrame(dfn)
+# # dfn = dfn[['SITE_ID','CELL_ID','CELL_NAME','ADDRESS','X_LONGITUDE','Y_LATITUDE','EARFCN_UL','UL_CHANNEL_BANDWIDTH','EARFCN_DL','DL_CHANNEL_BANDWIDTH','LAC','RAC','TAC_4G','PCI','ENBID','PO']]
+# dfndb = dfn[dfn['SITE_ID'].isin(site)].reset_index()
+# # print(dfndb)
+# addr = dfndb.loc[0,'ADDRESS']
+####CET Prosess==================
+dfc = pd.read_excel(cet)
+dfc = pd.DataFrame(dfc)
+###prosess 2G CET======
+df2cet = dfc[dfc['tech']=='2G'].reset_index()
+pi2g1,pi2g2,pi2g3 = df2cet.loc[0,'nilai'],df2cet.loc[1,'nilai'],df2cet.loc[2,'nilai']
+###prosess 4G CET======
+df4cet = dfc[dfc['tech']=='4G']
+df4pi = df4cet[df4cet['metode']=='PING'].reset_index() # nilai ping
+pi4g1,pi4g2,pi4g3 = df4pi.loc[0,'nilai'],df4pi.loc[1,'nilai'],df4pi.loc[2,'nilai']
+df4dl = df4cet[df4cet['metode']=='OKLADL'].reset_index() #nilai okla dl
+dl4g1,dl4g2,dl4g3 = df4dl.loc[0,'nilai'],df4dl.loc[1,'nilai'],df4dl.loc[2,'nilai']
+df4ul = df4cet[df4cet['metode']=='OKLAUL'].reset_index() #nilai okla ul
+ul4g1,ul4g2,ul4g3 = df4ul.loc[0,'nilai'],df4ul.loc[1,'nilai'],df4ul.loc[2,'nilai']
+df4okp = df4cet[df4cet['metode']=='OKLAPING'].reset_index() #nilai okla ping
+okp4g1,okp4g2,okp4g3 = df4okp.loc[0,'nilai'],df4okp.loc[1,'nilai'],df4okp.loc[2,'nilai']
+
+print(f"""
+siteid {siteid}
+sow {sow}
+sitename {sitename}
+address {addr}
+latlon {latlon}
+{lac2g} {cid2g} {bcch1} {bcch2} {bcch3}
+{lac4g} {rncid} {cid4g1} {cid4g2} {cid4g3} {pci1} {pci2} {pci3}
+{pi2g1,pi2g2,pi2g3}
+{pi4g1,pi4g2,pi4g3}
+{dl4g1,dl4g2,dl4g3}
+{ul4g1,ul4g2,ul4g3}
+{okp4g1,okp4g2,okp4g3}
+""")
+
+#mengisi data sheet 2G
+sh_2g.cells(7,4).value = sow #sow
+sh_2g.cells(10,4).value = sitename #Site Name / Site Id / DU ID
+sh_2g.cells(11,4).value = addr #addrress
+sh_2g.cells(12,4).value = latlon #lat long
+sh_2g.cells(24,5).value = lac2g #lac 2g
+sh_2g.cells(24,7).value = cid2g #cell ID 2g
+sh_2g.cells(24,8).value,sh_2g.cells(26,8).value,sh_2g.cells(28,8).value = bcch1,bcch2,bcch3 
+sh_2g.cells(45,13).value,sh_2g.cells(46,13).value,sh_2g.cells(47,13).value = f'{pi2g1} ms',f'{pi2g2} ms',f'{pi2g3} ms'
+###==========pingtest 2G==============
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,17).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,22).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,27).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,34).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,39).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,44).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,51).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,56).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,61).Left, Top=sh_2g.Cells(69,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========SMS OUT 2G==============
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,17).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,22).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,27).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,34).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,39).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,44).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,51).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,56).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,61).Left, Top=sh_2g.Cells(105,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========SMS IN 2G==============
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,17).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,22).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,27).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,34).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,39).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,44).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,51).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,56).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,61).Left, Top=sh_2g.Cells(141,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========USSD 2G==============
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,17).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 1/2G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,22).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,34).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 2/2G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,39).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,51).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_2g.Shapes.AddPicture(f'{pic_path}/SEC 3/2G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_2g.Cells(1,56).Left, Top=sh_2g.Cells(177,1).Top, Width=238.32, Height=469.44)
+except:pass
+#mengisi data sheet 4G
+sh_4g.cells(24,5).value = lac4g #lac 2g
+sh_4g.cells(24,6).value = rncid #RNC ID 2g
+sh_4g.cells(24,7).value,sh_4g.cells(26,7).value,sh_4g.cells(28,7).value = cid4g1,cid4g2,cid4g3
+sh_4g.cells(24,8).value,sh_4g.cells(26,8).value,sh_4g.cells(28,8).value = pci1,pci2,pci3
+sh_4g.cells(47,13).value,sh_4g.cells(52,13).value,sh_4g.cells(57,13).value = f'{dl4g1} Mbps',f'{dl4g2} Mbps',f'{dl4g3} Mbps'
+sh_4g.cells(48,13).value,sh_4g.cells(53,13).value,sh_4g.cells(58,13).value = f'{ul4g1} Mbps',f'{ul4g2} Mbps',f'{ul4g3} Mbps'
+sh_4g.cells(49,13).value,sh_4g.cells(54,13).value,sh_4g.cells(59,13).value = f'{okp4g1} ms',f'{okp4g2} ms',f'{okp4g3} ms'
+sh_4g.cells(63,13).value,sh_4g.cells(64,13).value,sh_4g.cells(65,13).value = f'{pi4g1} ms',f'{pi4g2} ms',f'{pi4g3} ms'
+###==========OKLA 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/OKLA/{okl[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/OKLA/{okl[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/OKLA/{okl[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/OKLA/{okl[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/OKLA/{okl[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/OKLA/{okl[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(144,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========pingtest 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/PING/{pi[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/PING/{pi[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/PING/{pi[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(180,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========SMS OUT 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS OUT/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS OUT/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS OUT/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(215,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========SMS IN 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS IN/{sms[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS IN/{sms[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/SMS IN/{sms[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(250,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========CSFB MOC 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MOC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MOC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MOC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MOC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,32).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MOC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MOC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MOC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,49).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MOC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,54).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MOC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,62).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MOC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,67).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MOC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,72).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MOC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,77).Left, Top=sh_4g.Cells(285,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========CSFB MTC 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MTC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MTC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MTC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/CSFB MTC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,32).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MTC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MTC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MTC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,49).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/CSFB MTC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,54).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MTC/{csfb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,62).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MTC/{csfb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,67).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MTC/{csfb[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,72).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/CSFB MTC/{csfb[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,77).Left, Top=sh_4g.Cells(320,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========VOLTE MOC 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MOC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MOC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MOC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MOC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MOC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MOC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MOC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MOC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MOC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(354,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========VOLTE MTC 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MTC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MTC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/VOLTE MTC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MTC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MTC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/VOLTE MTC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MTC/{volte[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MTC/{volte[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/VOLTE MTC/{volte[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(388,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========YOUTUBE 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/YT/{ytb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/YT/{ytb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/YT/{ytb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/YT/{ytb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/YT/{ytb[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/YT/{ytb[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(422,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========FACEBOOK 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/FB/{fbk[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/FB/{fbk[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/FB/{fbk[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/FB/{fbk[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/FB/{fbk[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/FB/{fbk[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(459,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========WHATSAPP VIDEO CALL 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/WA/{wap[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/WA/{wap[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/WA/{wap[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,27).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/WA/{wap[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/WA/{wap[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/WA/{wap[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,44).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/WA/{wap[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/WA/{wap[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/WA/{wap[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,61).Left, Top=sh_4g.Cells(495,1).Top, Width=238.32, Height=469.44)
+except:pass
+###==========USSD 4G==============
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,17).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 1/4G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,22).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,34).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 2/4G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,39).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/USSD/{usd[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,51).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+try:sh_4g.Shapes.AddPicture(f'{pic_path}/SEC 3/4G/USSD/{usd[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_4g.Cells(1,56).Left, Top=sh_4g.Cells(530,1).Top, Width=238.32, Height=469.44)
+except:pass
+####=======================================
+###==========DT IDLE==============
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,2).Left, Top=sh_idle.Cells(4,1).Top, Width=335.52, Height=205.2)
+except:pass
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,10).Left, Top=sh_idle.Cells(4,1).Top, Width=335.52, Height=205.2)
+except:pass
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,18).Left, Top=sh_idle.Cells(4,1).Top, Width=335.52, Height=205.2)
+except:pass
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,2).Left, Top=sh_idle.Cells(25,1).Top, Width=335.52, Height=205.2)
+except:pass
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[4]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,10).Left, Top=sh_idle.Cells(25,1).Top, Width=335.52, Height=205.2)
+except:pass
+try:sh_idle.Shapes.AddPicture(f'{pic_path}/IDLE/{idl[5]}',LinkToFile=False, SaveWithDocument=True, Left=sh_idle.Cells(1,18).Left, Top=sh_idle.Cells(25,1).Top, Width=335.52, Height=205.2)
+except:pass
+###==========DT MOBILITY==============
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[0]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,2).Left, Top=sh_ho.Cells(4,1).Top, Width=329.76, Height=223.92)
+except:pass
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[1]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,10).Left, Top=sh_ho.Cells(4,1).Top, Width=329.76, Height=223.92)
+except:pass
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[2]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,18).Left, Top=sh_ho.Cells(4,1).Top, Width=329.76, Height=223.92)
+except:pass
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[3]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,2).Left, Top=sh_ho.Cells(27,1).Top, Width=329.76, Height=223.92)
+except:pass
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[4]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,10).Left, Top=sh_ho.Cells(27,1).Top, Width=329.76, Height=223.92)
+except:pass
+try:sh_ho.Shapes.AddPicture(f'{pic_path}/HO/{hon[5]}',LinkToFile=False, SaveWithDocument=True, Left=sh_ho.Cells(1,18).Left, Top=sh_ho.Cells(27,1).Top, Width=329.76, Height=223.92)
+except:pass
+# writer = pd.ExcelWriter(f'{simpan}\{namefile}',engine='xlsxwriter')
+# dfl.to_excel(writer,index=False,sheet_name='miplan')
+# df2gi.to_excel(writer,index=False,sheet_name='Gcell2G')
+# df4gi.to_excel(writer,index=False,sheet_name='Gcell4G')
+# dfndb.to_excel(writer,index=False,sheet_name='ndb')
+# writer.close()
+
+print('isi table & nempelin gambar / capture selesai')
+print('Copyright(C) Arfan Amrico')
+# namafile = f"QC_{df.loc[0,'DU ID']}.xlsx"
+# wb.SaveAs(Filename=f'{pic_path}/{namafile}')
+# wb.Close()
