@@ -1,0 +1,180 @@
+import pandas as pd
+import re
+
+path = r"C:\Users\Lenovo\Documents\Raw\4G_Cell_ndb.csv"
+simpan = r"C:\Users\Lenovo\Documents\Raw\Data Gcell"
+filename = '4G_Gcell_20250811.csv'
+df = pd.read_csv(path)
+df = pd.DataFrame(df)
+# Fungsi untuk memetakan sector ke grup baru
+def map_sector(sector):
+    if sector in [1, 4]:
+        return 1
+    elif sector in [2, 5]:
+        return 2
+    elif sector in [3, 6]:
+        return 3
+    else:
+        return None  # jika nilai tak dikenal, bisa juga pakai np.nan
+
+# Tambahkan kolom baru berdasarkan mapping
+df['sector_group'] = df['sector'].apply(map_sector)
+# Fungsi untuk mengekstrak huruf setelah underscore terakhir
+def extract_letter(value):
+    last_part = value.split('_')[-1]  # Ambil bagian setelah underscore terakhir
+    match = re.match(r'([A-D])', last_part)
+    if match:
+        return match.group(1)
+    else:
+        return ''  # Kosongkan jika tidak ada huruf
+
+# Tambahkan kolom baru berdasarkan fungsi
+df['kategori'] = df['CellName'].apply(extract_letter)
+# Hitung jumlah kategori unik per site
+df['jumlah'] = df.groupby(['SITE_ID','sector_group'])['kategori'].transform(lambda x: x[x.notna() & (x != '')].nunique())
+# Fungsi untuk menghitung new_azimuth
+def calculate_new_azimuth(row):
+    offset = 0
+    if row['jumlah'] == 2:
+        if row['kategori'] == 'A':
+            offset = -30
+        elif row['kategori'] == 'B':
+            offset = 30
+    elif row['jumlah'] == 4:
+        if row['kategori'] == 'A':
+            offset = -30
+        elif row['kategori'] == 'B':
+            offset = -10
+        elif row['kategori'] == 'C':
+            offset = 10
+        elif row['kategori'] == 'D':
+            offset = 30
+    return (row['Dir'] + offset) % 360
+# Terapkan fungsi
+df['Dir_logical_new'] = df.apply(calculate_new_azimuth, axis=1)
+# Fungsi untuk menghitung new_azimuth
+def calculate_new_azimuth_swb(row):
+    offset = 0
+    if row['jumlah'] == 2:
+        if row['kategori'] == 'A':
+            offset = -16
+        elif row['kategori'] == 'B':
+            offset = 16
+    elif row['jumlah'] == 4:
+        if row['kategori'] == 'A':
+            offset = -30
+        elif row['kategori'] == 'B':
+            offset = -10
+        elif row['kategori'] == 'C':
+            offset = 10
+        elif row['kategori'] == 'D':
+            offset = 30
+    return (row['Dir'] + offset) % 360
+# Terapkan fungsi
+df['Dir_logical_swb'] = df.apply(calculate_new_azimuth_swb, axis=1)
+# Fungsi menentukan nilai new_beam
+def get_new_beam(row):
+    if row['jumlah'] == 0:
+        if row['SiteType'] == 'LTE1800':
+            return 60
+        elif row['SiteType'] == 'LTE2100':
+            return 60
+        elif row['SiteType'] == 'LTE900':
+            return 60
+    elif row['jumlah'] == 1:
+        if row['SiteType'] == 'LTE1800':
+            return 60
+        elif row['SiteType'] == 'LTE2100':
+            return 60
+        elif row['SiteType'] == 'LTE900':
+            return 60
+    elif row['jumlah'] == 2:
+        if row['SiteType'] == 'LTE1800':
+            return 30
+        elif row['SiteType'] == 'LTE2100':
+            return 30
+        elif row['SiteType'] == 'LTE900':
+            return 60
+    elif row['jumlah'] == 3:
+        if row['SiteType'] == 'LTE1800':
+            return 60
+        elif row['SiteType'] == 'LTE2100':
+            return 60
+        elif row['SiteType'] == 'LTE900':
+            return 60
+    elif row['jumlah'] == 4:
+        if row['SiteType'] == 'LTE1800':
+            return 18
+        elif row['SiteType'] == 'LTE2100':
+            return 18
+        elif row['SiteType'] == 'LTE900':
+            return 60
+    return None  # jika tidak cocok, bisa juga np.nan
+# Tambahkan kolom new_beam
+df['new_beam'] = df.apply(get_new_beam, axis=1)
+# Fungsi menentukan nilai new_radius
+def get_new_radius(row):
+    if row['SiteType'] == 'LTE1800':
+        return 70
+    elif row['SiteType'] == 'LTE2100':
+        return 80
+    elif row['SiteType'] == 'LTE900':
+        return 60
+    return None  # jika tidak cocok, bisa juga np.nan
+# Tambahkan kolom new_radius
+df['new_radius'] = df.apply(get_new_radius, axis=1)
+# membuat kolom legend
+def tentukan_legend(row):
+    kategori = row['kategori']
+    sector = row['sector_group']
+
+    if sector == 1:
+        if kategori == 'A' or pd.isna(kategori) or kategori == '':
+            return 'hijau terang' #36e02f
+        elif kategori == 'B':
+            return 'hijau gelap' #218a1d
+        elif kategori == 'C':
+            return 'Merah' #f30c04
+        elif kategori == 'D':
+            return 'Abu-abu' #a2adad
+    elif sector == 2:
+        if kategori == 'A' or pd.isna(kategori) or kategori == '':
+            return 'biru' #0e1bf7
+        elif kategori == 'B':
+            return 'biru langit' #0ff1ee
+        elif kategori == 'C':
+            return 'Ungu' #b307f7
+        elif kategori == 'D':
+            return 'Coklat' #91612d
+    elif sector == 3:
+        if kategori == 'A' or pd.isna(kategori) or kategori == '':
+            return 'kuning' #fbeb05
+        elif kategori == 'B':
+            return 'orange' #f35804
+        elif kategori == 'C':
+            return 'krem' #e5db74
+        elif kategori == 'D':
+            return 'Ping' #f30cbf
+    return 'lainnya'
+# Terapkan ke DataFrame
+df['legend'] = df.apply(tentukan_legend, axis=1)
+# Mapping legend ke kode warna hex
+warna_hex = {
+    'hijau terang': '#36e02f',
+    'hijau gelap': '#218a1d',
+    'Merah': '#f30c04',
+    'Abu-abu': '#a2adad',
+    'biru': '#0e1bf7',
+    'biru langit': '#0ff1ee',
+    'Ungu': '#b307f7',
+    'Coklat': '#91612d',
+    'kuning': '#fbeb05',
+    'orange': '#f35804',
+    'krem': '#e5db74',
+    'Ping': '#f30cbf',
+    'lainnya': '#090706'  # warna hitam untuk default
+}
+# Tambahkan kolom kodewarna
+df['kodewarna'] = df['legend'].map(warna_hex)
+df.to_csv(f'{simpan}/{filename}',index=False)
+print(df)
