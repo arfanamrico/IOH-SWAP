@@ -1,0 +1,66 @@
+import re
+import pandas as pd
+
+# Nama file input dan output
+input_file = r"C:\Users\Lenovo\Documents\ruparupa\MML_Task_Result_vswr_test.txt"
+output_file = r"C:\Users\Lenovo\Documents\ruparupa\vswr.xlsx"
+
+# List untuk menampung hasil parsing
+records = []
+
+with open(input_file, "r", encoding="utf-8") as f:
+    lines = f.readlines()
+
+mml_command = None
+ne_info = None
+report_date = None
+
+for i, line in enumerate(lines):
+    line = line.strip()
+
+    # Tangkap MML Command
+    if line.startswith("MML Command"):
+        mml_command = line.split(":")[0]
+
+    # Tangkap NE
+    elif line.startswith("NE :"):
+        ne_info = line.strip()
+
+    # Tangkap tanggal dari baris Report
+    elif line.startswith("Report"):
+        match = re.search(r"(\d{4}-\d{2}-\d{2})", line)
+        if match:
+            report_date = match.group(1)[2:]  # ambil YY-MM-DD
+
+    # Tangkap data hasil (angka2)
+    elif re.match(r"^\d+\s+\d+\s+\d+", line):
+        parts = line.split()
+        if len(parts) >= 7:
+            cabinet_no = parts[0]
+            subrack_no = parts[1]
+            slot_no = parts[2]
+            tx_channel_no = parts[3]
+            rf_port = parts[4]
+            vswr = parts[5]
+            vswr_time = " ".join(parts[6:8])
+
+            record = {
+                "MML Command": mml_command,
+                "Date": report_date,
+                "Object": ne_info,
+                "Cabinet No": cabinet_no,
+                "Subrack No": subrack_no,
+                "Slot No": slot_no,
+                "TX Channel No": tx_channel_no,
+                "RF Port": rf_port,
+                "VSWR(001)": vswr,
+                "Vswr Test Time": vswr_time
+            }
+            records.append(record)
+
+# Simpan ke Excel
+df = pd.DataFrame(records)
+df.to_excel(output_file, index=False)
+
+print(df)
+print(f"Parsing selesai! Data disimpan di {output_file}")
