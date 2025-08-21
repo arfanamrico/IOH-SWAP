@@ -1,0 +1,188 @@
+import win32com.client
+import pandas as pd
+import time
+start_time = time.time()
+
+site = ['12JKS0293']
+iddu = ['12JKS0293_FUSI_SWP_I']
+neigbor = ['12JKS0244_2','12JKS0258_2','12JKS0280_1','12JKS0300_2','12JKS0331_3']
+dirpath = r'C:\Users\Lenovo\Documents\SSA\12JKS0293'
+# pndb = r"D:\IOH\NDB\file pendukung\2G4G_NDB_Query.xlsx"
+gcell4g = r"C:\Users\Lenovo\Documents\Raw\Data Gcell\4G_Gcell_20250815.csv"
+gcell2g = r"C:\Users\Lenovo\Documents\Raw\Data Gcell\2G_Gcell_20250815.csv"
+boq = r"C:\Users\Lenovo\Documents\template\M1_PLAN_FINAL_SITE.xlsx"
+
+####=================================
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\DUID_20250624_SSA_INDOOR.xlsx")
+Excel.visible = True
+###==================================
+#penamaan sheet
+sh_si =wb.Worksheets("Site-Information")
+sh_ts =wb.Worksheets("Traffic Sharing")
+sh_pci =wb.Worksheets("PCI MOD3")
+# sh_cs =wb.Worksheets("Cross Sector Drive Less.")
+# sh_bs =wb.Worksheets("Analysis Badspot")
+###===========================
+
+# df = pd.read_excel(pndb)
+# df = pd.DataFrame(df)
+dfgcel = pd.read_csv(gcell4g)
+dfgcel = pd.DataFrame(dfgcel)
+df2gcel = pd.read_csv(gcell2g)
+df2gcel = pd.DataFrame(df2gcel)
+dfboq = pd.read_excel(boq,sheet_name='Sheet1')
+dfboq = pd.DataFrame(dfboq)
+####===========4G CONFIG=============
+df4g = dfgcel[dfgcel['SITE_ID'].isin(site)].reset_index()
+df4gdb = df4g[['SITE_ID','BAND','SectorID','LAC','CellName','PCI','EARFCN','ANTENNA_TRANSMISSION_MODE','BANDWIDTH_','SiteType']]
+# print(df4gdb)
+####===========2G CONFIG=============
+df2g = df2gcel[df2gcel['SITE_ID'].isin(site)].reset_index()
+df2gdb = df2g[['SITE_ID','BAND','SiteType','SectorID','LAC','CellName','CI','BCCH','BSCNAME']]
+# print(df2gdb)
+####==========SITE DESKRIPSI
+dfgc4g = dfgcel[dfgcel['SITE_ID'].isin(site)].reset_index()
+df4ggc = dfgc4g[['SiteName','SITE_ID','Longitude','Latitude','Ant_Height','Dir','Elec_Tilt','Mech_Tilt','Antenna_Type','SectorID']]
+# print(df4ggc)
+
+dfbo = dfboq[dfboq['DUID'].isin(iddu)].reset_index()
+dboq = dfbo[['DUID','new_site_id','Final Config (L2B)','Scope of Work']]
+# print(dboq)
+
+dfq = dfgcel[['SITE_ID','CellName','SiteType','Longitude','Latitude','Dir','Dir_logical_new','PCI','MOD3']]
+dfq['Sector_id'] = dfq['CellName'].str[-1]
+##===prosess site source=========
+tblnbr = []
+for s in site:
+    dfs = dfq[dfq['SITE_ID']== s].reset_index()
+    dfs['Source / Neighbor'] = 'Source'
+for n in neigbor:
+    sn,ss = n.rsplit('_',1)
+    dfn = dfq[(dfq['SITE_ID']== sn)&(dfq['Sector_id']== ss)].reset_index()
+    dfn['Source / Neighbor'] = 'Neighbor'
+    dfs = pd.concat([dfs,dfn], ignore_index=True)
+    dfnbr = dfgcel[(dfgcel['SITE_ID']== sn)&(dfgcel['sector']== int(ss))].reset_index()
+    tblnbr.append([dfnbr.loc[0,'SiteName'],dfnbr.loc[0,'SITE_ID'],dfnbr.loc[0,'Ant_Height']])
+
+dfs = dfs[['SITE_ID','CellName','Sector_id','SiteType','Source / Neighbor','Longitude','Latitude','Dir','Dir_logical_new','PCI','MOD3']]
+dftblnbr = pd.DataFrame(tblnbr,columns=['SiteName','SITE_ID','Ant_Height'])
+
+siteid,sitename,long,lat = df4ggc.loc[0,'SITE_ID'], df4ggc.loc[0,'SiteName'], df4ggc.loc[0,'Longitude'], df4ggc.loc[0,'Latitude']
+anthi,anttype = df4ggc.loc[0,'Ant_Height'], df4ggc.loc[0,'Antenna_Type']
+# azz1,azz2,azz3 = df4ggc.loc[0,'Dir'],df4ggc.loc[1,'Dir'],df4ggc.loc[2,'Dir']
+# et1,et2,et3 = df4ggc.loc[0,'Elec_Tilt'],df4ggc.loc[1,'Elec_Tilt'],df4ggc.loc[2,'Elec_Tilt']
+# mt1,mt2,mt3 = df4ggc.loc[0,'Mech_Tilt'],df4ggc.loc[1,'Mech_Tilt'],df4ggc.loc[2,'Mech_Tilt']
+duid,sow = dboq.loc[0,'DUID'],dboq.loc[0,'Scope of Work']
+
+##==========isi data AOR=============
+sh_si.cells(3,6).value = sow #sow
+sh_si.cells(8,3).value, sh_si.cells(8,7).value, sh_si.cells(8,11).value = sitename,siteid,duid
+sh_si.cells(9,5).value, sh_si.cells(9,9).value = long,lat
+# sh_si.cells(11,2).value,sh_si.cells(12,2).value,sh_si.cells(13,2).value = anthi,anthi,anthi
+sh_si.cells(12,4).value,sh_si.cells(13,4).value,sh_si.cells(14,4).value = anttype,anttype,anttype
+# sh_si.cells(11,4).value,sh_si.cells(12,4).value,sh_si.cells(13,4).value = azz1,azz2,azz3
+# sh_si.cells(11,5).value,sh_si.cells(12,5).value,sh_si.cells(13,5).value = et1,et2,et3
+# sh_si.cells(11,7).value,sh_si.cells(12,7).value,sh_si.cells(13,7).value = mt1,mt2,mt3
+
+##======= mengisi informasi 4G =============
+for i in range (0,len(df4gdb['BAND'])): #mengisi kolom band
+    sh_si.cells(18+i,2).value = df4gdb.loc[i,'BAND']
+for i in range (0,len(df4gdb['SectorID'])): #mengisi kolom sector
+    sh_si.cells(18+i,3).value = df4gdb.loc[i,'SectorID']
+for i in range (0,len(df4gdb['LAC'])): #mengisi kolom TAC
+    sh_si.cells(18+i,4).value = df4gdb.loc[i,'LAC']
+for i in range (0,len(df4gdb['CellName'])): #mengisi kolom cellname
+    sh_si.cells(18+i,5).value = df4gdb.loc[i,'CellName']
+for i in range (0,len(df4gdb['PCI'])): #mengisi kolom PCI
+    sh_si.cells(18+i,6).value = df4gdb.loc[i,'PCI']
+for i in range (0,len(df4gdb['EARFCN'])): #mengisi kolom EARFCN_DL
+    sh_si.cells(18+i,7).value = df4gdb.loc[i,'EARFCN']
+for i in range (0,len(df4gdb['ANTENNA_TRANSMISSION_MODE'])): #mengisi kolom ANTENNA_TRANSMISSION_MODE
+    sh_si.cells(18+i,8).value = df4gdb.loc[i,'ANTENNA_TRANSMISSION_MODE']
+for i in range (0,len(df4gdb['BANDWIDTH_'])): #mengisi kolom BANDWIDTH_
+    sh_si.cells(18+i,9).value = df4gdb.loc[i,'BANDWIDTH_']
+##======= mengisi informasi 2G =============
+for i in range (0,len(df2gdb['SiteType'])): #mengisi kolom band
+    sh_si.cells(31+i,2).value = df2gdb.loc[i,'SiteType']
+for i in range (0,len(df2gdb['SectorID'])): #mengisi kolom sector
+    sh_si.cells(31+i,3).value = df2gdb.loc[i,'SectorID']
+for i in range (0,len(df2gdb['LAC'])): #mengisi kolom TAC
+    sh_si.cells(31+i,4).value = df2gdb.loc[i,'LAC']
+for i in range (0,len(df2gdb['CellName'])): #mengisi kolom cellname
+    sh_si.cells(31+i,5).value = df2gdb.loc[i,'CellName']
+for i in range (0,len(df2gdb['CI'])): #mengisi kolom CELL_ID
+    sh_si.cells(31+i,6).value = df2gdb.loc[i,'CI']
+for i in range (0,len(df2gdb['BCCH'])): #mengisi kolom BCCH__OR__TRX1_Freq
+    sh_si.cells(31+i,7).value = df2gdb.loc[i,'BCCH']
+for i in range (0,len(df2gdb['BSCNAME'])): #mengisi kolom BSC_OR_RNC_NAME
+    sh_si.cells(31+i,9).value = df2gdb.loc[i,'BSCNAME']
+
+try:sh_si.Shapes.AddPicture(f'{dirpath}/capturan/map.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_si.Cells(1,3).Left, Top=sh_si.Cells(37,1).Top, Width=938.16, Height=588.96)
+except:pass
+try:sh_si.Shapes.AddPicture(f'{dirpath}/capturan/fv.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_si.Cells(1,2).Left, Top=sh_si.Cells(89,1).Top, Width=486, Height=272.88)
+except:pass
+try:sh_si.Shapes.AddPicture(f'{dirpath}/capturan/tv.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_si.Cells(1,7).Left, Top=sh_si.Cells(89,1).Top, Width=486, Height=272.88)
+except:pass
+
+try:sh_ts.cells(5,2).value,sh_ts.cells(5,3).value = siteid,sitename
+except:pass
+try:sh_ts.Shapes.AddPicture(f'{dirpath}/capturan/ge.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_ts.Cells(1,2).Left, Top=sh_ts.Cells(11,1).Top, Width=1012.32, Height=508.32)
+except:pass
+
+try:sh_pci.Shapes.AddPicture(f'{dirpath}/capturan/mod3.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_pci.Cells(1,2).Left, Top=sh_pci.Cells(4,1).Top, Width=893.52, Height=476.64)
+except:pass
+for i in range (0,len(dfs['SITE_ID'])): 
+    sh_pci.cells(38+i,2).value = dfs.loc[i,'SITE_ID']
+for i in range (0,len(dfs['CellName'])): 
+    sh_pci.cells(38+i,3).value = dfs.loc[i,'CellName']
+for i in range (0,len(dfs['Sector_id'])): 
+    sh_pci.cells(38+i,4).value = dfs.loc[i,'Sector_id']
+for i in range (0,len(dfs['SiteType'])): 
+    sh_pci.cells(38+i,5).value = dfs.loc[i,'SiteType']
+for i in range (0,len(dfs['Source / Neighbor'])): 
+    sh_pci.cells(38+i,6).value = dfs.loc[i,'Source / Neighbor']
+for i in range (0,len(dfs['Longitude'])): 
+    sh_pci.cells(38+i,7).value = dfs.loc[i,'Longitude']
+for i in range (0,len(dfs['Latitude'])): 
+    sh_pci.cells(38+i,8).value = dfs.loc[i,'Latitude']
+for i in range (0,len(dfs['Dir'])): 
+    sh_pci.cells(38+i,9).value = dfs.loc[i,'Dir']
+for i in range (0,len(dfs['Dir'])): 
+    sh_pci.cells(38+i,10).value = dfs.loc[i,'Dir_logical_new']
+for i in range (0,len(dfs['PCI'])): 
+    sh_pci.cells(38+i,11).value = dfs.loc[i,'PCI']
+for i in range (0,len(dfs['MOD3'])): 
+    sh_pci.cells(38+i,12).value = dfs.loc[i,'MOD3']
+##===  sheet Cross Sector ==============
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/ciallitg.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,3).Left, Top=sh_cs.Cells(13,1).Top, Width=427.68, Height=270)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/cil9.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,12).Left, Top=sh_cs.Cells(13,1).Top, Width=427.68, Height=270)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/cil18.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,18).Left, Top=sh_cs.Cells(13,1).Top, Width=427.68, Height=270)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/cil21.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,24).Left, Top=sh_cs.Cells(13,1).Top, Width=427.68, Height=270)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/rsrpitg.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,3).Left, Top=sh_cs.Cells(57,1).Top, Width=448.56, Height=282.96)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/rsrqitg.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,12).Left, Top=sh_cs.Cells(57,1).Top, Width=448.56, Height=282.96)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/rsrpbef.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,3).Left, Top=sh_cs.Cells(33,1).Top, Width=448.56, Height=282.96)
+# except:pass
+# try:sh_cs.Shapes.AddPicture(f'{dirpath}/capturan/rsrqbef.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_cs.Cells(1,12).Left, Top=sh_cs.Cells(33,1).Top, Width=448.56, Height=282.96)
+# except:pass
+# ##===  sheet bad spot ==============
+# try:sh_bs.Shapes.AddPicture(f'{dirpath}/capturan/rsrpbfbs.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_bs.Cells(1,2).Left, Top=sh_bs.Cells(22,1).Top, Width=482.4, Height=305.28)
+# except:pass
+# try:sh_bs.Shapes.AddPicture(f'{dirpath}/capturan/rsrpafbs.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_bs.Cells(1,5).Left, Top=sh_bs.Cells(22,1).Top, Width=482.4, Height=305.28)
+# except:pass
+# try:sh_bs.Shapes.AddPicture(f'{dirpath}/capturan/ciallitg.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_bs.Cells(1,9).Left, Top=sh_bs.Cells(22,1).Top, Width=482.4, Height=305.28)
+# except:pass
+# try:sh_bs.Shapes.AddPicture(f'{dirpath}/capturan/ciallopt.jpg',LinkToFile=False, SaveWithDocument=True, Left=sh_bs.Cells(1,18).Left, Top=sh_bs.Cells(22,1).Top, Width=482.4, Height=305.28)
+# except:pass
+
+
+end_time = time.time()
+print (f'Execution time:{end_time-start_time:.2f} seconds')
+print('isi table & nempelin gambar / capture selesai')
+print('Copyright(C) Arfan Amrico')
