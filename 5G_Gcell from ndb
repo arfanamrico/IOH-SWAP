@@ -1,9 +1,11 @@
 import pandas as pd
 import re
+import time
+start_time = time.time()
 
 path = r"C:\Users\Lenovo\Documents\Raw\5G_Cell_ndb.csv"
 simpan = r"C:\Users\Lenovo\Documents\Raw\Data Gcell"
-filename = '5G_Gcell_20250811.csv'
+filename = '5G_Gcell_20250815.csv'
 df = pd.read_csv(path)
 df = pd.DataFrame(df)
 # Fungsi untuk memetakan sector ke grup baru
@@ -111,6 +113,11 @@ def get_new_radius(row):
     return None  # jika tidak cocok, bisa juga np.nan
 # Tambahkan kolom new_radius
 df['new_radius'] = df.apply(get_new_radius, axis=1)
+# Ubah nilai beam jadi 359 jika typeantenna berisi 'indoor'
+df.loc[df["Antenna_Type"].str.lower().str.contains("indoor"), "new_beam"] = 359
+# Aturan perubahan radius
+df.loc[(df["Antenna_Type"].str.lower() == "indoor") & (df["SiteType"] == "5LTE1800"), "new_radius"] = 25
+df.loc[(df["Antenna_Type"].str.lower() == "indoor") & (df["SiteType"] == "5G_2100"), "new_radius"] = 30
 # membuat kolom legend
 def tentukan_legend(row):
     kategori = row['kategori']
@@ -140,7 +147,7 @@ def tentukan_legend(row):
         elif kategori == 'B':
             return 'orange' #f35804
         elif kategori == 'C':
-            return 'krem' #e5db74
+            return 'krem' #958e4b
         elif kategori == 'D':
             return 'Ping' #f30cbf
     return 'lainnya'
@@ -158,7 +165,7 @@ warna_hex = {
     'Coklat': '#91612d',
     'kuning': '#fbeb05',
     'orange': '#f35804',
-    'krem': '#e5db74',
+    'krem': '#958e4b',
     'Ping': '#f30cbf',
     'lainnya': '#090706'  # warna hitam untuk default
 }
@@ -166,3 +173,5 @@ warna_hex = {
 df['kodewarna'] = df['legend'].map(warna_hex)
 df.to_csv(f'{simpan}/{filename}',index=False)
 print(df)
+end_time = time.time()
+print (f'Execution time:{end_time-start_time:.2f} seconds')
