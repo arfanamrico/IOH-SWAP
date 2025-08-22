@@ -1,0 +1,98 @@
+import pandas as pd
+import re
+site = ['12JKT0037']
+
+cell4G = r"C:\Users\Lenovo\Documents\Raw\Cell Report\4G Cell 20250822.xlsx"
+cell2G = r"C:\Users\Lenovo\Documents\Raw\Cell Report\2G Cell 20250822.xlsx"
+
+df4 = pd.read_excel(cell4G, skiprows=2)
+df4 = pd.DataFrame(df4)
+##kolom = 'Site ID','eNodeB Name(*)','LocalCell Id(*)',' Frequency band','Cell ID','Cell Name','Downlink EARFCN','Downlink bandwidth','LTECell Tx and Rx Mode','Physical cell ID','Tracking area code','eNodeB identity'
+df4c = df4[df4['Site ID'].isin(site)]
+# Hapus suffix di akhir cellname
+df4c["cellname_clean"] = df4c["Cell Name"].str.replace(r'(_QQ|_FN|_FE|_XX|_FN_XX|_FE_XX)$', '', regex=True)
+df4c['sector'] = df4c['cellname_clean'].str[-1]
+# Fungsi untuk memetakan sector ke grup baru
+def map_sector(sector):
+    if sector in [1, 4]:
+        return 1
+    elif sector in [2, 5]:
+        return 2
+    elif sector in [3, 6]:
+        return 3
+    else:
+        return None  # jika nilai tak dikenal, bisa juga pakai np.nan
+# Tambahkan kolom baru berdasarkan mapping
+df4c['sector_group'] = df4c['sector'].astype(int).apply(map_sector)
+# Fungsi untuk mengekstrak huruf setelah underscore terakhir
+def extract_letter(value):
+    last_part = value.split('_')[-1]  # Ambil bagian setelah underscore terakhir
+    match = re.match(r'([A-D])', last_part)
+    if match:
+        return match.group(1)
+    else:
+        return ''  # Kosongkan jika tidak ada huruf
+# Tambahkan kolom baru berdasarkan fungsi
+df4c['kategori'] = df4c['cellname_clean'].apply(extract_letter)
+dfpci = df4c[['Site ID','sector_group','kategori','Tracking area code','Physical cell ID']]
+dfpci.drop_duplicates(subset='Physical cell ID',keep='first',inplace=True)
+dfpci = dfpci.sort_values(by=['sector_group', 'kategori']).reset_index()
+sectors = set(dfpci['sector_group'])
+df4g = []
+for sec in sectors:
+    sq = dfpci[dfpci['sector_group']==sec].reset_index()
+    lspci = sq['Physical cell ID'].tolist()
+    df4g.append([sq.loc[0,'Site ID'],sq.loc[0,'Tracking area code'],sec,lspci])
+df4gc = pd.DataFrame(df4g,columns=['SITE_ID','LAC','SEC','PCI'])
+df4gc['siteid_sec'] = df4gc['SITE_ID']+"_"+df4gc['SEC'].astype(str)
+data4G = df4gc[['siteid_sec','SITE_ID','SEC','LAC','PCI']]
+# print(data4G)
+###=========================2G======================
+df2 = pd.read_excel(cell2G, skiprows=2)
+df2 = pd.DataFrame(df2)
+df2c = df2[df2['Site ID'].isin(site)]
+# Hapus suffix di akhir cellname
+df2c["cellname_clean"] = df2c["Cell Name"].str.replace(r'(_QQ|_FN|_FE|_XX|_FN_XX|_FE_XX)$', '', regex=True)
+df2c['sector'] = df2c['cellname_clean'].str[-1]
+# Fungsi untuk memetakan sector ke grup baru
+def map_sector2(sector):
+    if sector in [1, 4]:
+        return 1
+    elif sector in [2, 5]:
+        return 2
+    elif sector in [3, 6]:
+        return 3
+    else:
+        return None  # jika nilai tak dikenal, bisa juga pakai np.nan
+# Tambahkan kolom baru berdasarkan mapping
+df2c['sector_group'] = df2c['sector'].astype(int).apply(map_sector2)
+# Fungsi untuk mengekstrak huruf setelah underscore terakhir
+def extract_letter2(value):
+    last_part = value.split('_')[-1]  # Ambil bagian setelah underscore terakhir
+    match = re.match(r'([A-D])', last_part)
+    if match:
+        return match.group(1)
+    else:
+        return ''  # Kosongkan jika tidak ada huruf
+# Tambahkan kolom baru berdasarkan fungsi
+df2c['kategori'] = df2c['cellname_clean'].apply(extract_letter2)
+dfbcch = df2c[['Site ID','sector_group','kategori','Cell CI','BCCH Frequency']]
+dfbcch.drop_duplicates(subset='Cell CI',keep='first',inplace=True)
+dfbcch = dfbcch.sort_values(by=['sector_group', 'kategori']).reset_index()
+sectors = set(dfbcch['sector_group'])
+df2g = []
+for sec in sectors:
+    sq = dfbcch[dfbcch['sector_group']==sec].reset_index()
+    lsci = sq['Cell CI'].tolist()
+    lsbcch = sq['BCCH Frequency'].tolist()
+    df2g.append([sq.loc[0,'Site ID'],sec,lsci,lsbcch])
+df2gc = pd.DataFrame(df2g,columns=['SITE_ID','SEC','CI','BCCH'])
+df2gc['siteid_sec'] = df2gc['SITE_ID']+"_"+df2gc['SEC'].astype(str)
+data2G = df2gc[['siteid_sec','CI','BCCH']]
+# print(data2G)
+
+pci_bcch = pd.merge(data4G,data2G,on='siteid_sec',how='left')
+pcibcch = pci_bcch[['SITE_ID','SEC','LAC','PCI','CI','BCCH']]
+# pcibcch.rename(columns={'SITE_ID_x':'SITE_ID','SEC_x':'SEC'},inplace=True)
+# pcibcch = pcibcch.sort_values(by='SEC').reset_index()
+print(pcibcch)
