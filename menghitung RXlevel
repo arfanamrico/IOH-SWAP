@@ -1,0 +1,20 @@
+import pandas as pd
+
+path = r"C:\Users\Lenovo\Documents\SSA\12JKS0277\export\2025-08-23_19-08-31_12JKS0277 T1 2G L15.csv"
+# Baca file CSV
+df = pd.read_csv(path)
+
+# Pastikan kolom rxlevel bertipe numerik
+df['GSM RxLev Sub(dBm)'] = pd.to_numeric(df['GSM RxLev Sub(dBm)'], errors='coerce')
+
+# Definisikan bin dan label sesuai range yang kamu mau
+bins = [-150, -115, -105, -95, -85, 0]
+labels = ["-150 to -115", "-115 to -105", "-105 to -95", "-95 to -85", "-85 to 0"]
+
+# Buat kolom kategori berdasarkan range
+df['rxlevel_range'] = pd.cut(df['GSM RxLev Sub(dBm)'], bins=bins, labels=labels, right=True)
+
+# Hitung jumlah data per range
+count_per_range = df['rxlevel_range'].value_counts().sort_index()
+
+print(count_per_range)
