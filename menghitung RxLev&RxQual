@@ -1,0 +1,66 @@
+import pandas as pd
+import glob
+import os
+
+# Path folder tempat file CSV
+folder_path = r"C:\Users\Lenovo\Documents\SSA\12JKS0277\export"   # ganti sesuai folder kamu
+all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+
+# Definisikan bin dan label untuk rxlevel
+bins_rxlevel = [-150, -115, -105, -95, -85, 0]
+labels_rxlevel = ["-150 to -115", "-115 to -105", "-105 to -95", "-95 to -85", "-85 to 0"]
+
+# Definisikan bin dan label untuk rxqual
+bins_rxqual = [0, 2, 4, 5, 6]
+labels_rxqual = ["0 to 2", "2 to 4", "4 to 5", "5 to 6"]
+
+# DataFrame untuk menampung hasil gabungan samping
+summary_rxlevel = pd.DataFrame(index=labels_rxlevel)
+summary_rxqual = pd.DataFrame(index=labels_rxqual)
+
+for file in all_files:
+    df = pd.read_csv(file)
+    
+    # ----------------- RXLEVEL -----------------
+    if 'GSM RxLev Sub(dBm)' in df.columns:
+        df['GSM RxLev Sub(dBm)'] = pd.to_numeric(df['GSM RxLev Sub(dBm)'], errors='coerce')
+        df['rxlevel_range'] = pd.cut(df['GSM RxLev Sub(dBm)'], bins=bins_rxlevel, labels=labels_rxlevel, right=True)
+        count_rxlevel = df['rxlevel_range'].value_counts().sort_index()
+    else:
+        count_rxlevel = pd.Series([0]*len(labels_rxlevel), index=labels_rxlevel)
+    
+    # ----------------- RXQUAL ------------------
+    if 'GSM RxQual Sub' in df.columns:
+        df['GSM RxQual Sub'] = pd.to_numeric(df['GSM RxQual Sub'], errors='coerce')
+        df['rxqual_range'] = pd.cut(df['GSM RxQual Sub'], bins=bins_rxqual, labels=labels_rxqual, right=True, include_lowest=True)
+        count_rxqual = df['rxqual_range'].value_counts().sort_index()
+    else:
+        count_rxqual = pd.Series([0]*len(labels_rxqual), index=labels_rxqual)
+    
+    # Ambil nama kolom dari setelah underscore kedua
+    filename = os.path.basename(file)
+    parts = filename.split("_")
+    if len(parts) >= 3:
+        col_name = parts[2].split(".")[0]  # buang ekstensi .csv
+    else:
+        col_name = filename  # fallback
+    
+    # Tambahkan ke summary masing-masing
+    summary_rxlevel[col_name] = count_rxlevel
+    summary_rxqual[col_name] = count_rxqual
+
+# Tambahkan kolom total
+# summary_rxlevel["Total"] = summary_rxlevel.sum(axis=1)
+# summary_rxqual["Total"] = summary_rxqual.sum(axis=1)
+
+# Simpan ke Excel dengan 2 sheet
+# with pd.ExcelWriter("rx_summary_wide.xlsx") as writer:
+#     summary_rxlevel.to_excel(writer, sheet_name="RxLevel")
+#     summary_rxqual.to_excel(writer, sheet_name="RxQual")
+
+# print("Selesai! Hasil disimpan di rx_summary_wide.xlsx")
+print(summary_rxlevel)
+print(summary_rxqual)
+
+# nacol = summary_df.columns
+# print(summary_df[nacol[2]][4])
