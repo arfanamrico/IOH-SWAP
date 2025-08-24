@@ -1,0 +1,91 @@
+import pandas as pd
+import glob
+import os
+import win32com.client    
+
+####=================================
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\DT_SSA_Cap_Thmp_test.xlsx")
+Excel.visible = True
+#penamaan sheet
+sh_2g =wb.Worksheets("DT 2G 1")
+sh_4g =wb.Worksheets("DT 4G 2")
+sh_ho =wb.Worksheets("DT HO Mobility")
+
+# Path folder tempat file CSV
+folder_path = r"C:\Users\Lenovo\Documents\SSA\12JKS0277\export"   # ganti sesuai folder kamu
+all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+
+# Definisikan bin dan label untuk rxlevel
+bins_rxlevel = [-150, -115, -105, -95, -85, 0]
+labels_rxlevel = ["-150 to -115", "-115 to -105", "-105 to -95", "-95 to -85", "-85 to 0"]
+
+# Definisikan bin dan label untuk rxqual
+bins_rxqual = [0, 2, 4, 5, 6]
+labels_rxqual = ["0 to 2", "2 to 4", "4 to 5", "5 to 6"]
+
+# DataFrame untuk menampung hasil gabungan samping
+summary_rxlevel = pd.DataFrame(index=labels_rxlevel)
+summary_rxqual = pd.DataFrame(index=labels_rxqual)
+
+for file in all_files:
+    df = pd.read_csv(file)
+    
+    # ----------------- RXLEVEL -----------------
+    if 'GSM RxLev Sub(dBm)' in df.columns:
+        df['GSM RxLev Sub(dBm)'] = pd.to_numeric(df['GSM RxLev Sub(dBm)'], errors='coerce')
+        df['rxlevel_range'] = pd.cut(df['GSM RxLev Sub(dBm)'], bins=bins_rxlevel, labels=labels_rxlevel, right=True)
+        count_rxlevel = df['rxlevel_range'].value_counts().sort_index()
+    else:
+        count_rxlevel = pd.Series([0]*len(labels_rxlevel), index=labels_rxlevel)
+    
+    # ----------------- RXQUAL ------------------
+    if 'GSM RxQual Sub' in df.columns:
+        df['GSM RxQual Sub'] = pd.to_numeric(df['GSM RxQual Sub'], errors='coerce')
+        df['rxqual_range'] = pd.cut(df['GSM RxQual Sub'], bins=bins_rxqual, labels=labels_rxqual, right=True, include_lowest=True)
+        count_rxqual = df['rxqual_range'].value_counts().sort_index()
+    else:
+        count_rxqual = pd.Series([0]*len(labels_rxqual), index=labels_rxqual)
+    
+    # Ambil nama kolom dari setelah underscore kedua
+    filename = os.path.basename(file)
+    parts = filename.split("_")
+    if len(parts) >= 3:
+        col_name = parts[2].split(".")[0]  # buang ekstensi .csv
+    else:
+        col_name = filename  # fallback
+    
+    # Tambahkan ke summary masing-masing
+    summary_rxlevel[col_name] = count_rxlevel
+    summary_rxqual[col_name] = count_rxqual
+
+# Tambahkan kolom total
+# summary_rxlevel["Total"] = summary_rxlevel.sum(axis=1)
+# summary_rxqual["Total"] = summary_rxqual.sum(axis=1)
+
+# Simpan ke Excel dengan 2 sheet
+# with pd.ExcelWriter("rx_summary_wide.xlsx") as writer:
+#     summary_rxlevel.to_excel(writer, sheet_name="RxLevel")
+#     summary_rxqual.to_excel(writer, sheet_name="RxQual")
+
+# print("Selesai! Hasil disimpan di rx_summary_wide.xlsx")
+# print(summary_rxlevel)
+# print(summary_rxqual)
+
+collev = summary_rxlevel.columns
+colqual = summary_rxqual.columns
+# print(summary_df[nacol[2]][4])
+#mengisi table RxLevel
+sh_2g.cells(42,4).value,sh_2g.cells(43,4).value,sh_2g.cells(44,4).value,sh_2g.cells(45,4).value,sh_2g.cells(46,4).value = summary_rxlevel[collev[0]][4],summary_rxlevel[collev[0]][3],summary_rxlevel[collev[0]][2],summary_rxlevel[collev[0]][1],summary_rxlevel[collev[0]][0]
+sh_2g.cells(89,4).value,sh_2g.cells(90,4).value,sh_2g.cells(91,4).value,sh_2g.cells(92,4).value,sh_2g.cells(93,4).value = summary_rxlevel[collev[1]][4],summary_rxlevel[collev[1]][3],summary_rxlevel[collev[1]][2],summary_rxlevel[collev[1]][1],summary_rxlevel[collev[1]][0]
+sh_2g.cells(137,4).value,sh_2g.cells(138,4).value,sh_2g.cells(139,4).value,sh_2g.cells(140,4).value,sh_2g.cells(141,4).value = summary_rxlevel[collev[2]][4],summary_rxlevel[collev[2]][3],summary_rxlevel[collev[2]][2],summary_rxlevel[collev[2]][1],summary_rxlevel[collev[2]][0]
+sh_2g.cells(184,4).value,sh_2g.cells(185,4).value,sh_2g.cells(186,4).value,sh_2g.cells(187,4).value,sh_2g.cells(188,4).value = summary_rxlevel[collev[3]][4],summary_rxlevel[collev[3]][3],summary_rxlevel[collev[3]][2],summary_rxlevel[collev[3]][1],summary_rxlevel[collev[3]][0]
+sh_2g.cells(231,4).value,sh_2g.cells(232,4).value,sh_2g.cells(233,4).value,sh_2g.cells(234,4).value,sh_2g.cells(235,4).value = summary_rxlevel[collev[4]][4],summary_rxlevel[collev[4]][3],summary_rxlevel[collev[4]][2],summary_rxlevel[collev[4]][1],summary_rxlevel[collev[4]][0]
+sh_2g.cells(278,4).value,sh_2g.cells(279,4).value,sh_2g.cells(280,4).value,sh_2g.cells(281,4).value,sh_2g.cells(282,4).value = summary_rxlevel[collev[5]][4],summary_rxlevel[collev[5]][3],summary_rxlevel[collev[5]][2],summary_rxlevel[collev[5]][1],summary_rxlevel[collev[5]][0]
+
+sh_2g.cells(42,15).value,sh_2g.cells(43,15).value,sh_2g.cells(44,15).value,sh_2g.cells(45,15).value = summary_rxqual[colqual[0]][0],summary_rxqual[colqual[0]][1],summary_rxqual[colqual[0]][2],summary_rxqual[colqual[0]][3]
+sh_2g.cells(89,15).value,sh_2g.cells(90,15).value,sh_2g.cells(91,15).value,sh_2g.cells(92,15).value = summary_rxqual[colqual[1]][0],summary_rxqual[colqual[1]][1],summary_rxqual[colqual[1]][2],summary_rxqual[colqual[1]][3]
+sh_2g.cells(137,15).value,sh_2g.cells(138,15).value,sh_2g.cells(139,15).value,sh_2g.cells(140,15).value = summary_rxqual[colqual[2]][0],summary_rxqual[colqual[2]][1],summary_rxqual[colqual[2]][2],summary_rxqual[colqual[2]][3]
+sh_2g.cells(184,15).value,sh_2g.cells(185,15).value,sh_2g.cells(186,15).value,sh_2g.cells(187,15).value = summary_rxqual[colqual[3]][0],summary_rxqual[colqual[3]][1],summary_rxqual[colqual[3]][2],summary_rxqual[colqual[3]][3]
+sh_2g.cells(231,15).value,sh_2g.cells(232,15).value,sh_2g.cells(233,15).value,sh_2g.cells(234,15).value = summary_rxqual[colqual[4]][0],summary_rxqual[colqual[4]][1],summary_rxqual[colqual[4]][2],summary_rxqual[colqual[4]][3]
+sh_2g.cells(278,15).value,sh_2g.cells(279,15).value,sh_2g.cells(280,15).value,sh_2g.cells(281,15).value = summary_rxqual[colqual[5]][0],summary_rxqual[colqual[5]][1],summary_rxqual[colqual[5]][2],summary_rxqual[colqual[5]][3]
