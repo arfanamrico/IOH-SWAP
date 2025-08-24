@@ -1,0 +1,105 @@
+import pandas as pd
+import glob
+import os
+import win32com.client    
+
+####=================================
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\DT_SSA_Cap_Thmp_test.xlsx")
+Excel.Visible = True
+
+namasheet = 'DT 4G'
+
+# fungsi untuk ambil folder
+def get_folders(path_folder):
+    items = os.listdir(path_folder)
+    return sorted([f for f in items if os.path.isdir(os.path.join(path_folder, f))])
+
+path4 = r"C:\Users\Lenovo\Documents\ruparupa\4G"
+folders4g = get_folders(path4)
+jmlfld = len(folders4g)
+
+# bin & label
+bins_rsrp = [-145, -115, -105, -95, -80, -30]
+labels_rsrp = ["-145 to -115", "-115 to -105", "-105 to -95", "-95 to -85", "-85 to -30"]
+
+bins_rsrq = [-40, -16, -14, -12, -10, 0]
+labels_rsrq = ["-40 to -16", "-16 to -14", "-14 to -12", "-12 to -10", "-10 to 0"]
+
+bins_sinr = [-20, -5, 0, 3, 10, 20, 50]
+labels_sinr = ["-20 to -5", "-5 to 0", "0 to 3", "3 to 10", "10 to 20", "20 to 50"]
+
+# offset baris untuk tiap file
+row_offsets = [42, 90, 139, 187, 235, 283]  # baris awal untuk file ke-0,1,2 dst.
+
+# looping tiap folder → sheet
+for js in range(jmlfld):
+    sheet_name = f'{namasheet} {js+1}'
+    sh_4g = wb.Worksheets(sheet_name)
+
+    folder_path = os.path.join(path4, folders4g[js])
+    all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+
+    # summary kosong untuk sheet ini
+    summary_rsrp = pd.DataFrame(index=labels_rsrp)
+    summary_rsrq = pd.DataFrame(index=labels_rsrq)
+    summary_sinr = pd.DataFrame(index=labels_sinr)
+
+    for file in all_files:
+        df = pd.read_csv(file)
+
+        # RSRP
+        if 'LTE PCC Serving RSRP(dBm)' in df.columns:
+            df['LTE PCC Serving RSRP(dBm)'] = pd.to_numeric(df['LTE PCC Serving RSRP(dBm)'], errors='coerce')
+            df['rsrp_range'] = pd.cut(df['LTE PCC Serving RSRP(dBm)'], bins=bins_rsrp, labels=labels_rsrp)
+            count_rsrp = df['rsrp_range'].value_counts().sort_index()
+        else:
+            count_rsrp = pd.Series([0]*len(labels_rsrp), index=labels_rsrp)
+
+        # RSRQ
+        if 'LTE PCC Serving RSRQ(dB)' in df.columns:
+            df['LTE PCC Serving RSRQ(dB)'] = pd.to_numeric(df['LTE PCC Serving RSRQ(dB)'], errors='coerce')
+            df['rsrq_range'] = pd.cut(df['LTE PCC Serving RSRQ(dB)'], bins=bins_rsrq, labels=labels_rsrq)
+            count_rsrq = df['rsrq_range'].value_counts().sort_index()
+        else:
+            count_rsrq = pd.Series([0]*len(labels_rsrq), index=labels_rsrq)
+
+        # SINR
+        if 'LTE PCC Serving SINR(dB)' in df.columns:
+            df['LTE PCC Serving SINR(dB)'] = pd.to_numeric(df['LTE PCC Serving SINR(dB)'], errors='coerce')
+            df['sinr_range'] = pd.cut(df['LTE PCC Serving SINR(dB)'], bins=bins_sinr, labels=labels_sinr, include_lowest=True)
+            count_sinr = df['sinr_range'].value_counts().sort_index()
+        else:
+            count_sinr = pd.Series([0]*len(labels_sinr), index=labels_sinr)
+
+        # ambil nama file → nama kolom
+        filename = os.path.basename(file)
+        parts = filename.split("_")
+        if len(parts) >= 3:
+            col_name = parts[2].split(".")[0]
+        else:
+            col_name = filename
+
+        summary_rsrp[col_name] = count_rsrp
+        summary_rsrq[col_name] = count_rsrq
+        summary_sinr[col_name] = count_sinr
+
+    # isi semua kolom ke Excel
+    for i, col in enumerate(summary_rsrp.columns):
+        if i >= len(row_offsets):
+            break  # kalau lebih banyak file dari slot yang tersedia → skip
+        start_row = row_offsets[i]
+
+        # isi RSRP (5 baris)
+        for k in range(len(labels_rsrp)):
+            sh_4g.Cells(start_row + k, 4).Value = summary_rsrp[col].iloc[len(labels_rsrp)-1-k]
+
+        # isi SINR (6 baris)
+        for k in range(len(labels_sinr)):
+            sh_4g.Cells(start_row + k, 15).Value = summary_sinr[col].iloc[len(labels_sinr)-1-k]
+
+        # isi RSRQ (5 baris)
+        for k in range(len(labels_rsrq)):
+            sh_4g.Cells(start_row + k, 26).Value = summary_rsrq[col].iloc[len(labels_rsrq)-1-k]
+
+    print(f"Selesai isi sheet {sheet_name} dari folder {folders4g[js]}")
