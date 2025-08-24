@@ -1,0 +1,53 @@
+import os
+import win32com.client    
+
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\DT_SSA_Cap_Thmp_test.xlsx")
+Excel.Visible = True
+
+namasheet = 'DT 4G'
+pic_path = r"C:\Users\Lenovo\Documents\SSA\12JKS0277\capturan\4G"   # path utama gambar
+
+def get_folders(path_folder):
+    items = os.listdir(path_folder)
+    return sorted([f for f in items if os.path.isdir(os.path.join(path_folder, f))])
+
+# daftar file gambar
+cap = ["1.jpg", "2.jpg", "3.jpg", "4.jpg"]
+# posisi relatif (kolom awal tiap gambar)
+col_positions = [3, 13, 24, 35]
+# tinggi antar blok lantai
+row_step = 49   
+
+gedungs = get_folders(pic_path)   # misalnya: ['gedung1','gedung2','gedung3']
+
+for g_idx, gedung in enumerate(gedungs):    
+    gedung_path = os.path.join(pic_path, gedung)
+    lantais = get_folders(gedung_path)      # misalnya: ['L1','L2',...,'L6']
+
+    sheet_name = f"{namasheet} {g_idx+1}"
+    sh_4g = wb.Worksheets(sheet_name)
+
+    for l_idx, lantai in enumerate(lantais):
+        folder_pic = os.path.join(gedung_path, lantai)
+        top_row = 4 + (l_idx * row_step)
+
+        for i, img_name in enumerate(cap):
+            img_file = os.path.join(folder_pic, img_name)
+            if os.path.exists(img_file):
+                try:
+                    sh_4g.Shapes.AddPicture(
+                        img_file,
+                        LinkToFile=False,
+                        SaveWithDocument=True,
+                        Left=sh_4g.Cells(1, col_positions[i]).Left,
+                        Top=sh_4g.Cells(top_row, 1).Top,
+                        Width=493.2,
+                        Height=303.12
+                    )
+                except Exception as e:
+                    print(f"Gagal insert {img_file}: {e}")
+
+        print(f"Selesai insert gambar untuk {gedung}/{lantai} → {sheet_name}")
+
+print("Proses selesai 🚀")
