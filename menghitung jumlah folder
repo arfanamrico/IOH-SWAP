@@ -1,0 +1,16 @@
+import os
+
+def hitung_folder(path_folder):
+    # List semua item dalam folder
+    items = os.listdir(path_folder)
+    # Filter hanya yang berupa folder
+    folders = [f for f in items if os.path.isdir(os.path.join(path_folder, f))]
+    return len(folders)
+
+# Contoh pemakaian
+path4 = r"C:\Users\Lenovo\Documents\SSA\12JKS0277"  # ganti dengan path folder kamu
+jumlah4 = hitung_folder(path4)
+print(f"Jumlah folder di dalam {path4}: {jumlah4}")
+path2 = r"C:\Users\Lenovo\Documents\SSA\12JKS0277\capturan"  # ganti dengan path folder kamu
+jumlah2 = hitung_folder(path2)
+print(f"Jumlah folder di dalam {path2}: {jumlah2}")
