@@ -1,0 +1,79 @@
+##=========sumber data dari GCELL===========
+import pandas as pd
+import re
+site = ['13DPK0450']
+
+gcell = r"C:\Users\Lenovo\Documents\Raw\Data Gcell\4G_Gcell_20250915.csv"
+gcell2 = r"C:\Users\Lenovo\Documents\Raw\Data Gcell\2G_Gcell_20250915_upd.csv"
+gcell5 = r"C:\Users\Lenovo\Documents\Raw\Data Gcell\5G_Gcell_20250915.csv"
+simpan = r"C:\Users\Lenovo\Documents\Logfile\11TGR0272\tab"
+namafile2 = '2Gkodewarna.csv'
+namafile = 'kodewarna.csv'
+df = pd.read_csv(gcell)
+df = pd.DataFrame(df)
+dfkode = df[['SITE_ID','LAC','PCI','sector_group','kategori','legend','kodewarna']]
+kode = dfkode[dfkode['SITE_ID'].isin(site)]
+kode.drop_duplicates(subset='PCI',keep='first',inplace=True)
+kode = kode.sort_values(by=['sector_group', 'kategori']).reset_index()
+sector = set(kode['sector_group'].astype(int))
+# kode['PCI'] = kode['PCI'].astype(int)
+# kode['sector_group'] = kode['sector_group'].astype(int)
+df4g = []
+for sec in sector:
+    sq = kode[kode['sector_group']==sec].reset_index()
+    lspci = sq['PCI'].astype(int).tolist()
+    df4g.append([sq.loc[0,'SITE_ID'],sq.loc[0,'LAC'],sec,lspci])
+# kode.to_csv(f'{simpan}/{namafile}', index=False)
+df4g = pd.DataFrame(df4g,columns=['SITE_ID','LAC_4G','SEC','PCI_4G'])
+df4g['siteid_sec'] = df4g['SITE_ID']+"_"+df4g['SEC'].astype(str)
+data4G = df4g[['siteid_sec','SITE_ID','SEC','LAC_4G','PCI_4G']]
+# print(df4g[['siteid_sec','SITE_ID','LAC','SEC','PCI']])
+
+##===========================2G===========
+df = pd.read_csv(gcell2)
+df = pd.DataFrame(df)
+dfkode = df[['SITE_ID','CI','BCCH','sector_group','kategori','legend','kodewarna']]
+kode = dfkode[dfkode['SITE_ID'].isin(site)]
+kode.drop_duplicates(subset='CI',keep='first',inplace=True)
+kode = kode.sort_values(by=['sector_group', 'kategori']).reset_index()
+sector2g = set(kode['sector_group'].astype(int))
+df2g = []
+for sec in sector2g:
+    sq2 = kode[kode['sector_group']==sec].reset_index()
+    lsbcch = sq2['BCCH'].astype(int).tolist()
+    lsci = sq2['CI'].astype(int).tolist()
+    df2g.append([sq2.loc[0,'SITE_ID'],sec,lsci,lsbcch])
+# kode.to_csv(f'{simpan}/{namafile}', index=False)
+df2g = pd.DataFrame(df2g,columns=['SITE_ID','SEC','CI','BCCH'])
+df2g['siteid_sec'] = df2g['SITE_ID']+"_"+df2g['SEC'].astype(str)
+# kode.to_csv(f'{simpan}/{namafile2}', index=False)
+data2g = df2g[['siteid_sec','CI','BCCH']]
+# print(df2g[['siteid_sec','CI','BCCH']])
+pci_bcch = pd.merge(data4G,data2g,on='siteid_sec',how='left')
+# print(pci_bcch[['SITE_ID','SEC','LAC','PCI','CI','BCCH']])
+##===========5G=================
+df5 = pd.read_csv(gcell5)
+df5 = pd.DataFrame(df5)
+df5kode = df5[['SITE_ID','LAC','PCI','sector_group','kategori','legend','kodewarna']]
+kode5 = df5kode[df5kode['SITE_ID'].isin(site)]
+chek5G = len(kode5['SITE_ID'])
+kode5.drop_duplicates(subset='PCI',keep='first',inplace=True)
+kode5 = kode5.sort_values(by=['sector_group', 'kategori']).reset_index()
+sector5 = set(kode5['sector_group'].astype(int))
+# kode['PCI'] = kode['PCI'].astype(int)
+# kode['sector_group'] = kode['sector_group'].astype(int)
+df5g = []
+for sec in sector5:
+    sq5 = kode5[kode5['sector_group']==sec].reset_index()
+    lspci5 = sq5['PCI'].astype(int).tolist()
+    df5g.append([sq5.loc[0,'SITE_ID'],sq5.loc[0,'LAC'],sec,lspci5])
+# kode.to_csv(f'{simpan}/{namafile}', index=False)
+df5g = pd.DataFrame(df5g,columns=['SITE_ID','LAC_5G','SEC','PCI_5G'])
+df5g['siteid_sec'] = df5g['SITE_ID']+"_"+df5g['SEC'].astype(str)
+data5G = df5g[['siteid_sec','LAC_5G','PCI_5G']]
+# print(chek5G)
+if chek5G > 0:
+    pci_bcch = pd.merge(pci_bcch,data5G,on='siteid_sec',how='left')
+    print(pci_bcch)
+else:
+    print(pci_bcch)
