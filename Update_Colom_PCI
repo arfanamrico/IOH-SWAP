@@ -1,0 +1,44 @@
+import pandas as pd
+
+# Path file
+file_a = r"C:\Users\Lenovo\Documents\Raw\4G_Cell_ndb.csv"
+file_b = r"C:\Users\Lenovo\Documents\Raw\Cell Report\4G Cell 20250926.xlsx"
+file_aupd = r"C:\Users\Lenovo\Documents\Raw\Data Gcell"
+namafile = "4G_Cell_ndb_upd.csv"
+
+# Kolom yang ingin diupdate dari File B
+update_cols = ["PCI"]  # tinggal tambah/kurangi sesuai kebutuhan
+
+# Baca file Excel
+df_a = pd.read_csv(file_a)
+# df_b = pd.read_excel(file_b)
+##=============================
+df2 = pd.read_excel(file_b, skiprows=2)
+df2 = pd.DataFrame(df2)
+# Hapus suffix di akhir cellname
+df2["cellname_clean"] = df2["Cell Name"].str.replace(r'(_QQ|_FN|_FE|_XX|_XY|_PL|_IJ|_TR|_TB|_EA|_CM|_TT|_PE|_MC|_FN_XX|_FN_QQ|_FE_XX)$', '', regex=True)
+# print(data2G)
+df_b = df2[['cellname_clean','Physical cell ID']]
+df_b.rename(columns={'cellname_clean':'CellName','Physical cell ID':'PCI'},inplace=True)
+
+
+# Samakan format cellname
+df_a['CellName'] = df_a['CellName'].astype(str).str.strip().str.upper()
+df_b['CellName'] = df_b['CellName'].astype(str).str.strip().str.upper()
+
+# Ambil hanya kolom yang diperlukan dari File B
+cols_to_merge = ["CellName"] + update_cols
+df_b_subset = df_b[cols_to_merge]
+
+# Merge File A dengan subset dari File B
+df_a = df_a.merge(df_b_subset, on='CellName', how='left', suffixes=('', '_fromB'))
+
+# Update semua kolom yang ada di update_cols
+for col in update_cols:
+    df_a[col] = df_a[f"{col}_fromB"].combine_first(df_a[col])
+    df_a = df_a.drop(columns=[f"{col}_fromB"])
+
+# Simpan kembali ke file A (overwrite langsung)
+df_a.to_csv(f"{file_aupd}/{namafile}", index=False)
+# print(df_a)
+print("File A berhasil diupdate langsung dengan kolom:", update_cols)
