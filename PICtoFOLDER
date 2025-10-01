@@ -1,0 +1,44 @@
+import os
+from pptx import Presentation
+from PIL import Image
+import io
+
+# Path file PowerPoint
+pptx_file = r"C:\Users\Lenovo\Documents\SSA\13BKS0031\4G Capt.pptx"
+
+# Folder output
+output_dir = r"C:\Users\Lenovo\Documents\SSA\13BKS0031\capturan\4G\gedung1"
+
+# Buka presentasi
+prs = Presentation(pptx_file)
+
+# Loop tiap slide
+for i, slide in enumerate(prs.slides, start=1):
+    # Buat folder untuk slide ini
+    slide_folder = os.path.join(output_dir, f'L{i}') #str(i)
+    os.makedirs(slide_folder, exist_ok=True)
+
+    # Counter gambar di slide ini
+    img_count = 1
+
+    # Loop tiap shape di slide
+    for shape in slide.shapes:
+        if shape.shape_type == 13:  # 13 = MSO_SHAPE_TYPE.PICTURE
+            image = shape.image
+            img_bytes = image.blob
+
+            # Deteksi ekstensi gambar
+            ext = "jpg"
+            # ext = image.ext
+            # if not ext:
+            #     ext = "jpg"
+
+            # Nama file output
+            img_filename = os.path.join(slide_folder, f"{img_count}.{ext}")
+
+            # Simpan file
+            with open(img_filename, "wb") as f:
+                f.write(img_bytes)
+
+            print(f"Disimpan: {img_filename}")
+            img_count += 1
