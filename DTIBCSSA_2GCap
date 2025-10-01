@@ -1,0 +1,141 @@
+import pandas as pd
+import glob
+import os
+import win32com.client  
+
+Excel = win32com.client.Dispatch("Excel.Application")
+wb = Excel.Workbooks.Open(r"C:\Users\Lenovo\Documents\template\DT_SSA_Cap_Thmp_test2.xlsx")  #C:\Users\Lenovo\Documents\template\DT_SSA_Cap_Thmp_test.xlsx
+Excel.Visible = True
+
+namasheet = 'DT 2G'
+pic_path = r"C:\Users\Lenovo\Documents\SSA\12JKU0388\capturan\2G"   # path utama gambar
+
+def get_folders(path_folder):
+    items = os.listdir(path_folder)
+    return sorted([f for f in items if os.path.isdir(os.path.join(path_folder, f))])
+
+# daftar file gambar
+cap = ["1.jpg", "2.jpg", "3.jpg", "4.jpg"]
+# posisi relatif (kolom awal tiap gambar)
+col_positions = [3, 13, 24, 35]
+# tinggi antar blok lantai
+row_step = 49   
+
+gedungs = get_folders(pic_path)   # misalnya: ['gedung1','gedung2','gedung3']
+
+for g_idx, gedung in enumerate(gedungs):    
+    gedung_path = os.path.join(pic_path, gedung)
+    lantais = get_folders(gedung_path)      # misalnya: ['L1','L2',...,'L6']
+
+    sheet_name = f"{namasheet} {g_idx+1}"
+    sh_2g = wb.Worksheets(sheet_name)
+
+    for l_idx, lantai in enumerate(lantais):
+        folder_pic = os.path.join(gedung_path, lantai)
+        top_row = 4 + (l_idx * row_step)
+
+        for i, img_name in enumerate(cap):
+            img_file = os.path.join(folder_pic, img_name)
+            if os.path.exists(img_file):
+                try:
+                    sh_2g.Shapes.AddPicture(
+                        img_file,
+                        LinkToFile=False,
+                        SaveWithDocument=True,
+                        Left=sh_2g.Cells(1, col_positions[i]).Left,
+                        Top=sh_2g.Cells(top_row, 1).Top,
+                        Width=493.2,
+                        Height=303.12
+                    )
+                except Exception as e:
+                    print(f"Gagal insert {img_file}: {e}")
+
+        print(f"Selesai insert gambar untuk {gedung}/{lantai} → {sheet_name}")
+
+print("Proses selesai 🚀")
+
+
+# fungsi untuk ambil folder
+def get_folders(path_folder):
+    items = os.listdir(path_folder)
+    return sorted([f for f in items if os.path.isdir(os.path.join(path_folder, f))])
+
+path4 = pic_path     ##"C:\Users\Lenovo\Documents\ruparupa\4G"
+folders4g = get_folders(path4)
+jmlfld = len(folders4g)
+
+# Definisikan bin dan label untuk rxlevel
+bins_rxlevel = [-150, -116, -106, -96, -86, 0]
+labels_rxlevel = ["-150 to -115", "-115 to -105", "-105 to -95", "-95 to -85", "-85 to 0"]
+
+# Definisikan bin dan label untuk rxqual
+bins_rxqual = [0, 1.9, 3.9, 4.9, 6]
+labels_rxqual = ["0 to 2", "2 to 4", "4 to 5", "5 to 6"]
+
+# looping tiap folder → sheet
+for js in range(jmlfld):
+    sheet_name = f'{namasheet} {js+1}'
+    sh_2g = wb.Worksheets(sheet_name)
+
+    folder_path = os.path.join(path4, folders4g[js])
+    all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+
+    # DataFrame untuk menampung hasil gabungan samping
+    summary_rxlevel = pd.DataFrame(index=labels_rxlevel)
+    summary_rxqual = pd.DataFrame(index=labels_rxqual)
+
+    for file in all_files:
+        df = pd.read_csv(file)
+        
+        # ----------------- RXLEVEL -----------------
+        if 'GSM RxLev Sub(dBm)' in df.columns:
+            df['GSM RxLev Sub(dBm)'] = pd.to_numeric(df['GSM RxLev Sub(dBm)'], errors='coerce')
+            df['rxlevel_range'] = pd.cut(df['GSM RxLev Sub(dBm)'], bins=bins_rxlevel, labels=labels_rxlevel, right=True)
+            count_rxlevel = df['rxlevel_range'].value_counts().sort_index()
+        else:
+            count_rxlevel = pd.Series([0]*len(labels_rxlevel), index=labels_rxlevel)
+        
+        # ----------------- RXQUAL ------------------
+        if 'GSM RxQual Sub' in df.columns:
+            df['GSM RxQual Sub'] = pd.to_numeric(df['GSM RxQual Sub'], errors='coerce')
+            df['rxqual_range'] = pd.cut(df['GSM RxQual Sub'], bins=bins_rxqual, labels=labels_rxqual, right=True, include_lowest=True)
+            count_rxqual = df['rxqual_range'].value_counts().sort_index()
+        else:
+            count_rxqual = pd.Series([0]*len(labels_rxqual), index=labels_rxqual)
+        
+        # Ambil nama kolom dari setelah underscore kedua
+        filename = os.path.basename(file)
+        parts = filename.split("_")
+        if len(parts) >= 3:
+            col_name = parts[2].split(".")[0]  # buang ekstensi .csv
+        else:
+            col_name = filename  # fallback
+        
+        # Tambahkan ke summary masing-masing
+        summary_rxlevel[col_name] = count_rxlevel
+        summary_rxqual[col_name] = count_rxqual
+
+    # ===============================
+    # Mengisi Excel pakai looping
+    # ===============================
+    collev = summary_rxlevel.columns
+    colqual = summary_rxqual.columns
+
+    # posisi baris awal tiap blok
+    start_rows_rxlevel = [42, 89, 137, 184, 231, 278, 325]  # tiap blok 47 baris
+    start_rows_rxqual  = [42, 89, 137, 184, 231, 278, 325]  # sama
+
+    # Loop isi RxLevel
+    for idx, col in enumerate(collev):
+        start_row = start_rows_rxlevel[idx]
+        for j in range(len(labels_rxlevel)):
+            sh_2g.Cells(start_row + j, 4).Value = summary_rxlevel[col][len(labels_rxlevel)-1-j]
+
+    # Loop isi RxQual
+    for idx, col in enumerate(colqual):
+        start_row = start_rows_rxqual[idx]
+        for j in range(len(labels_rxqual)):
+            sh_2g.Cells(start_row + j, 15).Value = summary_rxqual[col][j]
+
+        print(f"✅ Data berhasil diisi ke Excel dengan looping! {col_name}")
+       
