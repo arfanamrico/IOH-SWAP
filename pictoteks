@@ -1,0 +1,94 @@
+from PIL import Image
+import pytesseract
+import re
+import pandas as pd
+
+
+# Path ke gambar
+sumber = r"C:\Users\Lenovo\Documents\SSA\13BKS0025"
+image_path = f"{sumber}/capturan/pic1.jpg"
+site = '13BKS0025'
+# Kalau di Windows, set lokasi tesseract.exe
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+###===================sumber longlat=======================================
+sid = r"C:\Users\Lenovo\Documents\Gcell\Gcell_20250915\SiteID.csv"
+dfid = pd.read_csv(sid)
+dfid = pd.DataFrame(dfid)
+##=============================================================
+
+# Buka gambar
+img = Image.open(image_path)
+
+# Jalankan OCR
+text = pytesseract.image_to_string(img)
+
+# ====== Rapikan hasil OCR ======
+# Hilangkan spasi/tab berlebih
+text = re.sub(r"[ \t]+", " ", text)
+
+# Hapus baris kosong & strip spasi
+lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+# Hanya ambil baris dengan panjang minimal 5 karakter
+lines_filtered = [line for line in lines if len(line) >= 7]
+# Ambil teks sebelum underscore pertama
+lines_extracted = [line.split("_")[0] for line in lines_filtered]
+# Ganti karakter @ dan O menjadi 0
+lines_fixed = [line.replace("@", "0").replace("O", "0") for line in lines_extracted]
+# Buat unik & urutkan
+lines_unique = sorted(set(lines_fixed))
+
+# ====== Simpan ke Excel ======
+df = pd.DataFrame(lines_unique, columns=["SITE_ID"])
+
+nbr = pd.merge(df,dfid, on="SITE_ID", how='left')
+nbr['nbr'] = site
+
+output_excel = f"{sumber}/nbr.csv"
+nbr.to_csv(output_excel, index=False)
+
+print(nbr)
+
+
+# # Gabungkan kembali
+# text_clean = "\n".join(lines_unique)
+
+
+# # Cetak hasil
+# print("Hasil OCR (rapi):")
+# print(text_clean)
+
+# Simpan ke file txt
+# output_path = r"C:\Users\Lenovo\Documents\hasil_ocr_rapi.txt"
+# with open(output_path, "w", encoding="utf-8") as f:
+#     f.write(text_clean)
+
+# print(f"Teks berhasil disalin & dirapikan ke {output_path}")
+
+
+
+
+# from PIL import Image
+# import pytesseract
+
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# # Path ke gambar
+# image_path = r"C:\Users\Lenovo\Documents\SSA\13BKS0025\capturan\pic1.jpg"
+
+# # Buka gambar
+# img = Image.open(image_path)
+
+# # Jalankan OCR
+# text = pytesseract.image_to_string(img)
+
+# # Cetak hasil
+# print("Hasil OCR:")
+# print(text)
+
+# # Simpan ke file txt
+# # output_path = r"C:\Users\Lenovo\Documents\hasil_ocr.txt"
+# # with open(output_path, "w", encoding="utf-8") as f:
+# #     f.write(text)
+
+# # print(f"Teks berhasil disalin ke {output_path}")
